@@ -2,6 +2,7 @@
 
 ## Project Structure
 
+```markdown
 federations/
 │
 ├── api_gateway/
@@ -27,6 +28,7 @@ federations/
 │
 ├── docker-compose.yml
 └── README.md
+```
 
 ## Architecture
 
