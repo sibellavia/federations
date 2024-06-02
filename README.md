@@ -24,7 +24,7 @@ federations/
 └── README.md
 ```
 
-## Architecture.
+## Architecture
 
 A PoC that allows different federated instances to communicate with each other via API. Special focus on the integration and API part without worrying too much about a UI. 
 
@@ -34,19 +34,19 @@ Main components:
 - Integration Layer
 - Authentication and Security
 
-### Federation Nodes.
+### Federation Nodes
 
 Each node represents a federated instance. Nodes must be able to receive, process, and respond to requests.
 
-### API Gateway.
+### API Gateway
 
 The API Gateway serves as the central point for routing requests between federated nodes.
 
-### Integration Layer.
+### Integration Layer
 
 The Integration Layer manages the integrations between different cloud infrastructures.
 
-### Authentication and Security.
+### Authentication and Security
 
 Authentication and Security ensures that only authorized nodes can communicate with each other.
 
