@@ -7,22 +7,16 @@ federations/
 │
 ├── api_gateway/
 │   ├── app.py
-│   ├── models.py
-│   ├── routes.py
 │   ├── __init__.py
 │   └── requirements.txt
 │
 ├── federation_node/
 │   ├── app.py
-│   ├── models.py
-│   ├── routes.py
 │   ├── __init__.py
 │   └── requirements.txt
 │
 ├── integration_layer/
 │   ├── app.py
-│   ├── models.py
-│   ├── routes.py
 │   ├── __init__.py
 │   └── requirements.txt
 │
@@ -30,31 +24,31 @@ federations/
 └── README.md
 ```
 
-## Architecture
+## Architecture.
 
-Un PoC che consenta a diverse istanze federate di comunicare tra loro tramite API. Focus particolare sull'integrazione e sulla parte delle API senza preoccuparsi troppo di una UI. 
+A PoC that allows different federated instances to communicate with each other via API. Special focus on the integration and API part without worrying too much about a UI. 
 
-Componenti principali:
-- Federation Nodes (Nodi Federati)
+Main components:
+- Federation Nodes
 - API Gateway
 - Integration Layer
-- Autenticazione e Sicurezza
+- Authentication and Security
 
-### Federation Nodes
+### Federation Nodes.
 
-Ogni nodo rappresenta un'istanza federata. I nodi devono essere in grado di ricevere, elaborare e rispondere alle richieste.
+Each node represents a federated instance. Nodes must be able to receive, process, and respond to requests.
 
-### API Gateway
+### API Gateway.
 
-L'API Gateway serve come punto centrale per instradare le richieste tra i nodi federati.
+The API Gateway serves as the central point for routing requests between federated nodes.
 
-### Integration Layer
+### Integration Layer.
 
-L'Integration Layer gestisce le integrazioni tra le diverse infrastrutture cloud.
+The Integration Layer manages the integrations between different cloud infrastructures.
 
-### Authentication and Security
+### Authentication and Security.
 
-L'autenticazione e la sicurezza garantiscono che solo i nodi autorizzati possano comunicare tra loro.
+Authentication and Security ensures that only authorized nodes can communicate with each other.
 
 ### Diagram
 
@@ -112,7 +106,7 @@ Each component runs on a different port. The base URLs for each component are as
 **Request Body**:
 ```json
 {
-  "message": "Hello from Node B"
+  "message": "Hello from Node <node_name>"
 }
 ```
 
@@ -135,7 +129,7 @@ Each component runs on a different port. The base URLs for each component are as
 ```json
 {
   "target_node": "http://node_b/api/receive",
-  "message": "Hello from Node A"
+  "message": "Hello from Node <node_name>"
 }
 ```
 
@@ -267,7 +261,7 @@ Authorization: Bearer <your_jwt_token>
         ```bash
         curl -X POST http://localhost:5001/api/send -H "Content-Type: application/json" -d '{
           "target_node": "http://node_b/api/receive",
-          "message": "Hello from Node A"
+          "message": "Hello from Node"
         }'
         ```
 
