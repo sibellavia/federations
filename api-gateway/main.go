@@ -14,6 +14,8 @@ func main() {
 	// Define routes
 	r.HandleFunc("/createFederation", createFederationHandler).Methods("POST")
 	r.HandleFunc("/federations", listFederationsHandler).Methods("GET")
+	r.HandleFunc("/federations/addService", addServiceHandler).Methods("POST")
+	r.HandleFunc("/federations/getServices", getServicesHandler).Methods("GET")
 	r.HandleFunc("/register", registerHandler).Methods("POST")
 	r.HandleFunc("/login", loginHandler).Methods("POST")
 	r.HandleFunc("/sendMessage", sendMessageHandler).Methods("POST")
@@ -45,6 +47,42 @@ func listFederationsHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.Get("http://localhost:8081/federations")
 	if err != nil {
 		http.Error(w, "Failed to list federations", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(resp.StatusCode)
+	w.Write(body)
+}
+
+func addServiceHandler(w http.ResponseWriter, r *http.Request) {
+	resp, err := http.Post("http://localhost:8081/federations/addService", "application/json", r.Body)
+	if err != nil {
+		http.Error(w, "Failed to add service", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Failed to read response", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(resp.StatusCode)
+	w.Write(body)
+}
+
+func getServicesHandler(w http.ResponseWriter, r *http.Request) {
+	resp, err := http.Get("http://localhost:8081/federations/getServices?" + r.URL.RawQuery)
+	if err != nil {
+		http.Error(w, "Failed to get services", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()

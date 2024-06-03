@@ -76,7 +76,7 @@ The APIs are divided into three main categories:
 3. Messaging Service
 
 ### Base URL
-The base URL for the API Gateway is `http://localhost:8080`.
+The base URL for the API Gateway is `http://localhost:8082`.
 
 ### 1. Federation Management
 
