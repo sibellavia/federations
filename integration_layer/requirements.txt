@@ -1,5 +1,0 @@
-flask
-flask-sqlalchemy
-pyjwt
-flask-talisman
-requests

@@ -1,290 +1,305 @@
-# Federations PoC (Proof of Concept)
+## Federations PoC
 
-## Project Structure
+## Basic Features
 
-```markdown
-federations/
-│
-├── api_gateway/
-│   ├── app.py
-│   ├── __init__.py
-│   └── requirements.txt
-│
-├── federation_node/
-│   ├── app.py
-│   ├── __init__.py
-│   └── requirements.txt
-│
-├── integration_layer/
-│   ├── app.py
-│   ├── __init__.py
-│   └── requirements.txt
-│
-├── docker-compose.yml
-└── README.md
-```
+1. **Federation Management:**
+   - **Create Federation:** Allows the creation of new federation instances.
+   - **List Federations:** Retrieves a list of all existing federation instances.
 
-## Architecture
+2. **User Management:**
+   - **Register User:** Allows users to register within a federation.
+   - **Login User:** Authenticates users and provides them with an access token.
 
-A PoC that allows different federated instances to communicate with each other via API. Special focus on the integration and API part without worrying too much about a UI. 
+3. **Messaging:**
+   - **Send Message:** Enables users to send messages between federations.
+   - **Get Messages:** Retrieves all messages for the federation.
 
-Main components:
-- Federation Nodes
-- API Gateway
-- Integration Layer
-- Authentication and Security
+## Basic Workflows
 
-### Federation Nodes
+1. **Creating a New Federation:**
+   - **Step 1:** The admin sends a request to the API Gateway to create a new federation using the `/createFederation` endpoint.
+   - **Step 2:** The API Gateway forwards the request to the Federation Manager service.
+   - **Step 3:** The Federation Manager creates a new federation instance and stores its details.
+   - **Step 4:** The Federation Manager returns the federation ID and status to the API Gateway, which then forwards the response to the admin.
 
-Each node represents a federated instance. Nodes must be able to receive, process, and respond to requests.
+2. **Listing Existing Federations:**
+   - **Step 1:** A user sends a request to the API Gateway to list all federations using the `/federations` endpoint.
+   - **Step 2:** The API Gateway forwards the request to the Federation Manager service.
+   - **Step 3:** The Federation Manager retrieves the list of federations and sends it back to the API Gateway, which then forwards the response to the user.
 
-### API Gateway
+3. **Registering a New User:**
+   - **Step 1:** A user sends a request to the API Gateway to register using the `/register` endpoint.
+   - **Step 2:** The API Gateway forwards the request to the User Management service.
+   - **Step 3:** The User Management service registers the user and stores their details.
+   - **Step 4:** The User Management service returns the user ID and status to the API Gateway, which then forwards the response to the user.
 
-The API Gateway serves as the central point for routing requests between federated nodes.
+4. **Logging in a User:**
+   - **Step 1:** A user sends a request to the API Gateway to log in using the `/login` endpoint.
+   - **Step 2:** The API Gateway forwards the request to the User Management service.
+   - **Step 3:** The User Management service authenticates the user and generates an access token.
+   - **Step 4:** The User Management service returns the access token and status to the API Gateway, which then forwards the response to the user.
 
-### Integration Layer
+5. **Sending a Message:**
+   - **Step 1:** A user sends a request to the API Gateway to send a message using the `/sendMessage` endpoint.
+   - **Step 2:** The API Gateway forwards the request to the Messaging service.
+   - **Step 3:** The Messaging service processes the message and stores it.
+   - **Step 4:** The Messaging service returns the message ID and status to the API Gateway, which then forwards the response to the user.
 
-The Integration Layer manages the integrations between different cloud infrastructures.
+6. **Retrieving Messages:**
+   - **Step 1:** A user sends a request to the API Gateway to retrieve messages using the `/getMessages` endpoint.
+   - **Step 2:** The API Gateway forwards the request to the Messaging service.
+   - **Step 3:** The Messaging service retrieves all messages and sends them back to the API Gateway, which then forwards the response to the user.
 
-### Authentication and Security
+Sure! Below is the detailed documentation for the APIs included in your PoC. This documentation will cover endpoints for federation management, user management, and messaging services.
 
-Authentication and Security ensures that only authorized nodes can communicate with each other.
-
-### Diagram
-
-```lua
-+----------------------+          +----------------------+          +----------------------+
-|  Federation Node A   | <------> |      API Gateway     | <------> |  Federation Node B   |
-+----------------------+          +----------------------+          +----------------------+
-        ^  ^                                                        ^  ^
-        |  |                                                        |  |
-        |  +-------------------+                +-------------------+  |
-        |                      |                |                      |
-        |   +--------------------+            +--------------------+   |
-        |   | Integration Layer  |            | Integration Layer  |   |
-        |   +--------------------+            +--------------------+   |
-        |                                                             |
-        +-------------------------------------------------------------+
-```
-
-## Tech Stack
-
-- Framework: Flask
-- Database: SQLite
-- Autenticazione: pyjwt
-- HTTPS: Flask-Talisman
-and Docker.
-
-## API Documentation 
+## API Documentation
 
 ### Overview
 
-The PoC consists of three main components:
-
-1. **Federation Node**: Each node represents a federated instance.
-2. **API Gateway**: Central gateway for routing requests between federation nodes.
-3. **Integration Layer**: Handles integration with different cloud providers.
+The APIs are divided into three main categories:
+1. Federation Management
+2. User Management
+3. Messaging Service
 
 ### Base URL
+The base URL for the API Gateway is `http://localhost:8080`.
 
-Each component runs on a different port. The base URLs for each component are as follows:
+### 1. Federation Management
 
-- **Federation Node**: `http://localhost:5001`
-- **API Gateway**: `http://localhost:5000`
-- **Integration Layer**: `http://localhost:5002`
+#### 1.1 Create Federation
+**Endpoint:** `/createFederation`  
+**Method:** `POST`  
+**Description:** Creates a new federation instance.
 
-### Federation Node API
-
-#### 1. Receive Request
-
-**Endpoint**: `/api/receive`
-
-**Method**: `POST`
-
-**Description**: Receives a request from another federation node.
-
-**Request Body**:
+**Request:**
 ```json
 {
-  "message": "Hello from Node <node_name>"
+  "name": "string",
+  "admin": {
+    "username": "string",
+    "password": "string"
+  }
 }
 ```
 
-**Response**:
+**Response:**
 ```json
 {
-  "status": "Received"
+  "federationId": "string",
+  "status": "string"
 }
 ```
 
-#### 2. Send Request
+**Example Request:**
+```bash
+curl -X POST http://localhost:8080/createFederation \
+  -H "Content-Type: application/json" \
+  -d '{
+        "name": "Federation1",
+        "admin": {
+          "username": "admin",
+          "password": "admin123"
+        }
+      }'
+```
 
-**Endpoint**: `/api/send`
-
-**Method**: `POST`
-
-**Description**: Sends a request to another federation node.
-
-**Request Body**:
+**Example Response:**
 ```json
 {
-  "target_node": "http://node_b/api/receive",
-  "message": "Hello from Node <node_name>"
+  "federationId": "fed-1",
+  "status": "created"
 }
 ```
 
-**Response**:
+#### 1.2 List Federations
+**Endpoint:** `/federations`  
+**Method:** `GET`  
+**Description:** Lists all existing federation instances.
+
+**Response:**
 ```json
 {
-  "status": "Sent",
-  "response": "Received"
-}
-```
-
-### API Gateway
-
-#### 1. Register Node
-
-**Endpoint**: `/api/nodes/register`
-
-**Method**: `POST`
-
-**Description**: Registers a new federation node.
-
-**Request Body**:
-```json
-{
-  "node_name": "Node A",
-  "node_url": "http://node_a/api/receive",
-  "auth_token": "node_a_token"
-}
-```
-
-**Response**:
-```json
-{
-  "status": "Node Registered"
-}
-```
-
-#### 2. Forward Request
-
-**Endpoint**: `/api/gateway/forward`
-
-**Method**: `POST`
-
-**Description**: Forwards a request to a specified federation node.
-
-**Request Body**:
-```json
-{
-  "target_node": "Node B",
-  "message": "Hello from Gateway"
-}
-```
-
-**Response**:
-```json
-{
-  "status": "Forwarded",
-  "response": "Received"
-}
-```
-
-### Integration Layer
-
-#### 1. Get Cloud Resources
-
-**Endpoint**: `/api/cloud/resources`
-
-**Method**: `GET`
-
-**Description**: Returns a list of available resources from a specified cloud provider.
-
-**Response**:
-```json
-{
-  "resources": [
-    "VM1",
-    "VM2",
-    "Storage1"
+  "federations": [
+    {
+      "id": "string",
+      "name": "string"
+    }
   ]
 }
 ```
 
-#### 2. Execute Cloud Action
+**Example Request:**
+```bash
+curl -X GET http://localhost:8080/federations
+```
 
-**Endpoint**: `/api/cloud/action`
-
-**Method**: `POST`
-
-**Description**: Executes a specified action on a cloud resource.
-
-**Request Body**:
+**Example Response:**
 ```json
 {
-  "action": "start_vm",
-  "resource_id": "VM1"
+  "federations": [
+    {
+      "id": "fed-1",
+      "name": "Federation1"
+    }
+  ]
 }
 ```
 
-**Response**:
+### 2. User Management
+
+#### 2.1 Register User
+**Endpoint:** `/register`  
+**Method:** `POST`  
+**Description:** Registers a new user within a federation.
+
+**Request:**
 ```json
 {
-  "status": "Action Executed"
+  "username": "string",
+  "password": "string"
 }
 ```
 
-### Authentication and Security
-
-All API endpoints require authentication using JSON Web Tokens (JWT). Include the JWT in the `Authorization` header of each request:
-
-**Authorization Header**:
+**Response:**
+```json
+{
+  "userId": "string",
+  "status": "string"
+}
 ```
-Authorization: Bearer <your_jwt_token>
+
+**Example Request:**
+```bash
+curl -X POST http://localhost:8080/register \
+  -H "Content-Type: application/json" \
+  -d '{
+        "username": "user1",
+        "password": "password123"
+      }'
 ```
 
-### Example Workflow
+**Example Response:**
+```json
+{
+  "userId": "user-1",
+  "status": "registered"
+}
+```
 
-1. **Register a Node**: A federation node registers itself with the API Gateway.
-    - **Request**:
-        ```bash
-        curl -X POST http://localhost:5000/api/nodes/register -H "Content-Type: application/json" -d '{
-          "node_name": "Node A",
-          "node_url": "http://node_a/api/receive",
-          "auth_token": "node_a_token"
-        }'
-        ```
+#### 2.2 Login User
+**Endpoint:** `/login`  
+**Method:** `POST`  
+**Description:** Authenticates a user and returns an access token.
 
-2. **Send a Request**: A federation node sends a request to another node.
-    - **Request**:
-        ```bash
-        curl -X POST http://localhost:5001/api/send -H "Content-Type: application/json" -d '{
-          "target_node": "http://node_b/api/receive",
-          "message": "Hello from Node"
-        }'
-        ```
+**Request:**
+```json
+{
+  "username": "string",
+  "password": "string"
+}
+```
 
-3. **Forward a Request**: The API Gateway forwards a request to a specified node.
-    - **Request**:
-        ```bash
-        curl -X POST http://localhost:5000/api/gateway/forward -H "Content-Type: application/json" -d '{
-          "target_node": "Node B",
-          "message": "Hello from Gateway"
-        }'
-        ```
+**Response:**
+```json
+{
+  "token": "string",
+  "status": "string"
+}
+```
 
-4. **Get Cloud Resources**: Retrieve the list of resources from a cloud provider.
-    - **Request**:
-        ```bash
-        curl -X GET http://localhost:5002/api/cloud/resources
-        ```
+**Example Request:**
+```bash
+curl -X POST http://localhost:8080/login \
+  -H "Content-Type: application/json" \
+  -d '{
+        "username": "user1",
+        "password": "password123"
+      }'
+```
 
-5. **Execute Cloud Action**: Perform an action on a cloud resource.
-    - **Request**:
-        ```bash
-        curl -X POST http://localhost:5002/api/cloud/action -H "Content-Type: application/json" -d '{
-          "action": "start_vm",
-          "resource_id": "VM1"
-        }'
-        ```
+**Example Response:**
+```json
+{
+  "token": "abcdef123456",
+  "status": "logged in"
+}
+```
+
+### 3. Messaging Service
+
+#### 3.1 Send Message
+**Endpoint:** `/sendMessage`  
+**Method:** `POST`  
+**Description:** Sends a message from one federation to another.
+
+**Request:**
+```json
+{
+  "from": "string",
+  "to": "string",
+  "content": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "messageId": "string",
+  "status": "string"
+}
+```
+
+**Example Request:**
+```bash
+curl -X POST http://localhost:8080/sendMessage \
+  -H "Content-Type: application/json" \
+  -d '{
+        "from": "user1@fed-1",
+        "to": "user2@fed-2",
+        "content": "Hello from Federation 1!"
+      }'
+```
+
+**Example Response:**
+```json
+{
+  "messageId": "msg-1",
+  "status": "sent"
+}
+```
+
+#### 3.2 Get Messages
+**Endpoint:** `/getMessages`  
+**Method:** `GET`  
+**Description:** Retrieves all messages for the federation.
+
+**Response:**
+```json
+{
+  "messages": [
+    {
+      "from": "string",
+      "to": "string",
+      "content": "string"
+    }
+  ]
+}
+```
+
+**Example Request:**
+```bash
+curl -X GET http://localhost:8080/getMessages
+```
+
+**Example Response:**
+```json
+{
+  "messages": [
+    {
+      "from": "user1@fed-1",
+      "to": "user2@fed-2",
+      "content": "Hello from Federation 1!"
+    }
+  ]
+}
+```
