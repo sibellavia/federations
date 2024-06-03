@@ -14,8 +14,8 @@ func main() {
 	// Define routes
 	r.HandleFunc("/createFederation", createFederationHandler).Methods("POST")
 	r.HandleFunc("/federations", listFederationsHandler).Methods("GET")
-	r.HandleFunc("/register", registerUserHandler).Methods("POST")
-	r.HandleFunc("/login", loginUserHandler).Methods("POST")
+	r.HandleFunc("/register", registerHandler).Methods("POST")
+	r.HandleFunc("/login", loginHandler).Methods("POST")
 	r.HandleFunc("/sendMessage", sendMessageHandler).Methods("POST")
 	r.HandleFunc("/getMessages", getMessagesHandler).Methods("GET")
 
@@ -59,7 +59,7 @@ func listFederationsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-func registerUserHandler(w http.ResponseWriter, r *http.Request) {
+func registerHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.Post("http://localhost:8083/register", "application/json", r.Body)
 	if err != nil {
 		http.Error(w, "Failed to register user", http.StatusInternalServerError)
@@ -77,7 +77,7 @@ func registerUserHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-func loginUserHandler(w http.ResponseWriter, r *http.Request) {
+func loginHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := http.Post("http://localhost:8083/login", "application/json", r.Body)
 	if err != nil {
 		http.Error(w, "Failed to login user", http.StatusInternalServerError)
