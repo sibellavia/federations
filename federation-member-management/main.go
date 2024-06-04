@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
@@ -112,35 +113,28 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	insertQuery := `
-    INSERT INTO fed_admins (member_name, enabled) 
-    VALUES (?, ?);
-    `
+	result, err := db.Exec("INSERT INTO fed_admins (member_name, email, description, enabled) VALUES (?, ?, ?, ?)", nil, newFedAdmin.Name, *newFedAdmin.Email, *newFedAdmin.Description, newFedAdmin.Enabled)
 
-	result, err := db.Exec(insertQuery, newFedAdmin.Name, newFedAdmin.Enabled)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Get the newly inserted member_id
-	// memberId, err := result.LastInsertId()
-	// if err != nil {
-	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-	//     return
-	// }
-
-	// Return the newly inserted Fed Admin as JSON
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(result)
+	id, err := result.LastInsertId()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	var FedAdminInfo FedAdminInfo
+
+	FedAdminInfo.MemberID = strconv.FormatInt(id, 10)
+
+	json.NewEncoder(w).Encode(newFedAdmin)
 }
 
 func listFedAdmins(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT * FROM fed_admins")
+	rows, err := db.Query("SELECT member_id, member_name, email, description, enabled, feds_owned FROM fed_admins")
 	if err != nil {
 		http.Error(w, "Failed to retrieve fed admins", http.StatusInternalServerError)
 		return
@@ -151,9 +145,9 @@ func listFedAdmins(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var fedAdmin FedAdminInfo
-		err := rows.Scan(&fedAdmin.MemberID, &fedAdmin.MemberName, &fedAdmin.Email, &fedAdmin.Description)
+		err := rows.Scan(&fedAdmin.MemberID, &fedAdmin.MemberName, &fedAdmin.Email, &fedAdmin.Description, &fedAdmin.Enabled, &fedAdmin.FedsOwned)
 		if err != nil {
-			http.Error(w, "Failed to scan federation", http.StatusInternalServerError)
+			http.Error(w, "Failed to scan Federation Admins", http.StatusInternalServerError)
 			return
 		}
 		fedAdmins = append(fedAdmins, fedAdmin)
