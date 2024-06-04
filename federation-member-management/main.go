@@ -81,6 +81,7 @@ func main() {
 
 	// 1. FHSOperator Core
 	router.HandleFunc("/FHSOperator/NewFedAdmin", handleNewFedAdmin).Methods(http.MethodPost)
+	router.HandleFunc("/FHSOperator/FedAdmins", listFedAdmins).Methods(http.MethodGet)
 
 	// Service running
 	log.Println("Federation Member Management Service running on port 8083")
@@ -136,4 +137,30 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+func listFedAdmins(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT * FROM fed_admins")
+	if err != nil {
+		http.Error(w, "Failed to retrieve fed admins", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var fedAdmins []FedAdminInfo
+
+	for rows.Next() {
+		var fedAdmin FedAdminInfo
+		err := rows.Scan(&fedAdmin.MemberID, &fedAdmin.MemberName, &fedAdmin.Email, &fedAdmin.Description)
+		if err != nil {
+			http.Error(w, "Failed to scan federation", http.StatusInternalServerError)
+			return
+		}
+		fedAdmins = append(fedAdmins, fedAdmin)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(fedAdmins)
+
+	rows.Close()
 }
