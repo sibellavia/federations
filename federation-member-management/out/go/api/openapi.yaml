@@ -1,0 +1,604 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: lee@keyvoms.org
+  description: "This is the FHSOperator API for the IEEE 2302-2021 Standard for Intercloud\
+    \ Interoperability and Federation (https://standards.ieee.org/ieee/2302/7056).\
+    \  This standard is based on the NIST Cloud Federation Reference Architecture\
+    \ (CFRA), SP 500-332, (https://doi.org/10.6028/NIST.SP.500-332)."
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: FHSOperator API
+  version: "0.1"
+externalDocs:
+  description: Find out more about the NIST CFRA
+  url: https://doi.org/10.6028/NIST.SP.500-332
+servers:
+- description: Start with one server then add a second to test the entire API.
+  url: https://tbd_fed_server.org/FHSv1
+security:
+- fhs_auth:
+  - fed_operator
+tags:
+- description: Calls for an FHSOperator to manage a Fed Hosting Server.
+  externalDocs:
+    description: 'More info:'
+    url: https://doi.org/10.6028/NIST.SP.500-332
+  name: FHSOperator Core
+- description: Calls to Enable/Manage FHS-FHS Communication.
+  externalDocs:
+    description: 'More info:'
+    url: https://doi.org/10.6028/NIST.SP.500-332
+  name: FHSOperator FHS-FHS
+paths:
+  /FHSOperator/NewFedAdmin:
+    post:
+      description: ""
+      operationId: newFedAdmin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewFedAdmin'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/NewFedAdmin'
+        description: New FedAdmin information
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FedAdminID'
+          description: Federation Admin account ready to use.
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: Add a new user authorized to create and administer federations
+      tags:
+      - FHSOperator Core
+  /FHSOperator/FedAdmins:
+    get:
+      description: ""
+      operationId: listFedAdmins
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/FedAdminInfo'
+                type: array
+          description: List of Federation Admins.
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: List federation admins
+      tags:
+      - FHSOperator Core
+  /FHSOperator/FedAdmin/{member_id}:
+    delete:
+      description: ""
+      operationId: deleteFedAdmin
+      parameters:
+      - description: The FedAdmin MemberID
+        explode: false
+        in: path
+        name: member_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: FedAdmin deleted
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: Delete a FedAdmin.
+      tags:
+      - FHSOperator Core
+    put:
+      description: ""
+      operationId: updateFedAdmin
+      parameters:
+      - description: The FedAdmin MemberID
+        explode: false
+        in: path
+        name: member_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FedAdminUpdateInfo'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/FedAdminUpdateInfo'
+        description: FedAdmin update information
+        required: true
+      responses:
+        "200":
+          description: FedAdmin info updated
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: Update FedAdmin information.
+      tags:
+      - FHSOperator Core
+  /FHSOperator/FedInstances:
+    get:
+      description: ""
+      operationId: listFedInstances
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/FedInstanceInfo'
+                type: array
+          description: List of Federation Instances.
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: List federation instances
+      tags:
+      - FHSOperator Core
+  /FHSOperator/FedInstance/{fed_id}:
+    delete:
+      description: ""
+      operationId: deleteFederation
+      parameters:
+      - description: The federation ID
+        explode: false
+        in: path
+        name: fed_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: Federation deleted
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: Delete a federation.
+      tags:
+      - FHSOperator Core
+    put:
+      description: ""
+      operationId: updateFedInstance
+      parameters:
+      - description: The Federation ID
+        explode: false
+        in: path
+        name: fed_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FedInstanceUpdateInfo'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/FedInstanceUpdateInfo'
+        description: Federation update information
+        required: true
+      responses:
+        "200":
+          description: Federation info updated
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: Update FedInstance information.
+      tags:
+      - FHSOperator Core
+  /FHSOperator/AllowConnection:
+    post:
+      description: ""
+      operationId: allowConnect
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllowedConnectInfo'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/AllowedConnectInfo'
+        description: Allowable connect information
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionInfo'
+          description: Connection Allowed.
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: Allow a connection from another Fed Service
+      tags:
+      - FHSOperator FHS-FHS
+  /FHSOperator/Connect:
+    post:
+      description: ""
+      operationId: requestConnect
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectReq'
+        description: Connection request information
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionInfo'
+          description: Connection Established.
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+        "408":
+          description: Request timed-out.
+        "503":
+          description: Request declined.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: Request connection to another Fed Service
+      tags:
+      - FHSOperator FHS-FHS
+  /FHSOperator/Connections:
+    get:
+      description: ""
+      operationId: listConnections
+      parameters: []
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ConnectionInfo'
+                type: array
+          description: List of Connections.
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: List Connections
+      tags:
+      - FHSOperator FHS-FHS
+  /FHSOperator/Connection/{conn_id}:
+    delete:
+      description: ""
+      operationId: deleteConnection
+      parameters:
+      - description: The Connection ID
+        explode: false
+        in: path
+        name: conn_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          description: Connection terminated
+        "400":
+          description: Bad Request;  Some request info was malformed or invalid.
+        "401":
+          description: Unauthorized;  User is unauthorized to perform this operation.
+      security:
+      - fhs_auth:
+        - fed_operator
+      summary: Delete a connection.
+      tags:
+      - FHSOperator FHS-FHS
+components:
+  schemas:
+    NewFedAdmin:
+      example:
+        name: name
+        description: description
+        email: email
+        enabled: false
+      properties:
+        name:
+          type: string
+        email:
+          format: email
+          type: string
+        description:
+          type: string
+        enabled:
+          default: false
+          type: boolean
+      required:
+      - enabled
+      - name
+      type: object
+      xml:
+        name: NewFedAdmin
+    FedAdminInfo:
+      example:
+        member_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        feds_owned:
+        - fed_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - fed_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        description: description
+        member_name: member_name
+        email: email
+        enabled: true
+      properties:
+        member_id:
+          format: uuid
+          type: string
+        member_name:
+          type: string
+        email:
+          format: email
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        feds_owned:
+          items:
+            $ref: '#/components/schemas/FederationID'
+          type: array
+      required:
+      - enabled
+      - feds_owned
+      - member_id
+      - member_name
+      type: object
+      xml:
+        name: FedAdminInfo
+    FedAdminUpdateInfo:
+      example:
+        description: description
+        member_name: member_name
+        email: email
+        enabled: true
+      properties:
+        member_name:
+          type: string
+        email:
+          format: email
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+      type: object
+      xml:
+        name: FedAdminUpdateInfo
+    FedInstanceInfo:
+      example:
+        connections_used:
+        - conn_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - conn_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        fed_name: fed_name
+        fed_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        description: description
+        owning_fedadmin_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        enabled: true
+      properties:
+        fed_id:
+          format: uuid
+          type: string
+        fed_name:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        owning_fedadmin_id:
+          format: uuid
+          type: string
+        connections_used:
+          items:
+            $ref: '#/components/schemas/ConnectionID'
+          type: array
+      required:
+      - connections_used
+      - enabled
+      - fed_id
+      - fed_name
+      - owning_fedadmin_id
+      type: object
+      xml:
+        name: FedInstanceInfo
+    FedInstanceUpdateInfo:
+      example:
+        enabled: true
+      properties:
+        enabled:
+          type: boolean
+      required:
+      - enabled
+      type: object
+      xml:
+        name: FedInstanceUpdateInfo
+    AllowedConnectInfo:
+      example:
+        connect_ttl: 2000-01-23T04:56:07.000+00:00
+        description: description
+        FHS_URL: http://example.com/aeiou
+      properties:
+        FHS_URL:
+          format: url
+          type: string
+        connect_ttl:
+          format: date-time
+          type: string
+        description:
+          type: string
+      required:
+      - FHS_URL
+      type: object
+      xml:
+        name: AllowedConnectInfo
+    ConnectReq:
+      example:
+        connect_ttl: 2000-01-23T04:56:07.000+00:00
+        description: description
+        FHS_URL: http://example.com/aeiou
+      properties:
+        FHS_URL:
+          format: url
+          type: string
+        connect_ttl:
+          format: date-time
+          type: string
+        description:
+          type: string
+      required:
+      - FHS_URL
+      type: object
+      xml:
+        name: ConnectReq
+    ConnectionInfo:
+      example:
+        connection_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        description: description
+        known_federations:
+        - fed_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        - fed_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        time_established: 2000-01-23T04:56:07.000+00:00
+        time_terminated: 2000-01-23T04:56:07.000+00:00
+        FHS_URL: http://example.com/aeiou
+        status: allowed
+      properties:
+        connection_id:
+          format: uuid
+          type: string
+        FHS_URL:
+          format: url
+          type: string
+        description:
+          type: string
+        status:
+          enum:
+          - allowed
+          - expired
+          - declined
+          - active
+          - terminated
+          type: string
+        time_established:
+          format: date-time
+          type: string
+        time_terminated:
+          format: date-time
+          type: string
+        known_federations:
+          items:
+            $ref: '#/components/schemas/FederationID'
+          type: array
+      required:
+      - FHS_URL
+      - connection_id
+      - known_federations
+      - status
+      type: object
+      xml:
+        name: ConnectionInfo
+    FedAdminID:
+      example:
+        member_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        member_id:
+          format: uuid
+          type: string
+      required:
+      - member_id
+      type: object
+      xml:
+        name: FedAdminID
+    FederationID:
+      example:
+        fed_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        fed_id:
+          format: uuid
+          type: string
+      required:
+      - fed_id
+      type: object
+      xml:
+        name: FederationID
+    ConnectionID:
+      example:
+        conn_id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+      properties:
+        conn_id:
+          format: uuid
+          type: string
+      required:
+      - conn_id
+      type: object
+      xml:
+        name: ConnectionID
+  securitySchemes:
+    fhs_auth:
+      openIdConnectUrl: https://example.com/.well-known/openid-configuration
+      type: openIdConnect

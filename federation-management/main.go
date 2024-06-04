@@ -11,12 +11,14 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Represents a Federation with an ID, name and a list of services (Federated Resources Catalogue)
 type Federation struct {
 	ID               int       `json:"id"`
 	Name             string    `json:"name"`
 	ServiceCatalogue []Service `json:"service_catalogue"`
 }
 
+// Represents a Service with an ID, federation ID, name and description
 type Service struct {
 	ID           int    `json:"id"`
 	FederationID int    `json:"federation_id"`
@@ -24,11 +26,14 @@ type Service struct {
 	Description  string `json:"description"`
 }
 
+// A global variable to hold the database connection
 var db *sql.DB
 
+// Main opens the SQLite database, creates federations and services tables if they don't exist, sets up HTTP routes, and starts the HTTP server.
 func main() {
 	var err error
 	db, err = sql.Open("sqlite3", "./federations.db")
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,20 +67,27 @@ func main() {
 		return
 	}
 
-	router := mux.NewRouter() // Create a mux router
+	// Create a mux router for handling HTTP requests
+	router := mux.NewRouter()
 
-	// Federation management endpoints:
+	// IEEE-2302-2021 :: Member-FHS API
+
+	// 4. Federation
 	router.HandleFunc("/federations", handleFederations).Methods(http.MethodPost, http.MethodGet)
 	router.HandleFunc("/federations/{fed_id}", handleFederationByID).Methods(http.MethodGet, http.MethodDelete)
 
+	// Service running
 	log.Println("Federation Manager Service running on port 8081")
 	log.Fatal(http.ListenAndServe(":8081", router)) // Pass the router to ListenAndServe
 }
 
-// handleFederations handles requests to /federations
+// handleFederations handles requests to /federations/
+// handles POST requests to create a new federation and GET requests to retrieve all federations.
 func handleFederations(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case http.MethodPost: // Create a new federation
+
+	// Decodes the request body to a Federation struct, inserts it into the database, and returns the created federation.
+	case http.MethodPost:
 		var federation Federation
 		err := json.NewDecoder(r.Body).Decode(&federation)
 		if err != nil {
@@ -83,6 +95,7 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// executes SQL insert statement
 		result, err := db.Exec("INSERT INTO federations (name) VALUES (?)", federation.Name)
 		if err != nil {
 			http.Error(w, "Failed to create federation", http.StatusInternalServerError)
@@ -99,7 +112,8 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(federation)
 
-	case http.MethodGet: // Get all federations
+	// Queries the database for all federations and returns them as a JSON response.
+	case http.MethodGet:
 		rows, err := db.Query("SELECT id, name FROM federations")
 		if err != nil {
 			http.Error(w, "Failed to retrieve federations", http.StatusInternalServerError)
@@ -127,6 +141,7 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleFederationByID handles requests to /federations/{fed_id}
+// handles GET and DELETE requests for a specific federation by ID.
 func handleFederationByID(w http.ResponseWriter, r *http.Request) {
 	// 1. Get the federation ID from the URL parameters
 	vars := mux.Vars(r)
