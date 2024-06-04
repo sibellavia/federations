@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
@@ -20,7 +19,7 @@ type NewFedAdmin struct {
 }
 
 type FedAdminInfo struct {
-	MemberID    string         `json:"member_id" yaml:"member_id"`
+	MemberID    int            `json:"member_id" yaml:"member_id"`
 	MemberName  string         `json:"member_name" yaml:"member_name"`
 	Email       string         `json:"email" yaml:"email"`
 	Description string         `json:"description" yaml:"description"`
@@ -51,7 +50,7 @@ func main() {
 		email TEXT,
 		description TEXT,
 		enabled BOOLEAN NOT NULL,
-		feds_owned 
+		feds_owned TEXT
 	);
 	`
 
@@ -105,7 +104,7 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Insert the new fedAdmin into the db
+	// Open the database connection
 	db, err := sql.Open("sqlite3", "../federation-management/federations.db")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -113,7 +112,18 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	result, err := db.Exec("INSERT INTO fed_admins (member_name, email, description, enabled) VALUES (?, ?, ?, ?)", nil, newFedAdmin.Name, *newFedAdmin.Email, *newFedAdmin.Description, newFedAdmin.Enabled)
+	// Handle optional fields
+	email := ""
+	description := ""
+	if newFedAdmin.Email != nil {
+		email = *newFedAdmin.Email
+	}
+	if newFedAdmin.Description != nil {
+		description = *newFedAdmin.Description
+	}
+
+	// Insert the new fedAdmin into the db
+	result, err := db.Exec("INSERT INTO fed_admins (member_name, email, description, enabled, feds_owned) VALUES (?, ?, ?, ?, ?)", newFedAdmin.Name, email, description, newFedAdmin.Enabled, "[]")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -126,11 +136,18 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var FedAdminInfo FedAdminInfo
+	// Create the response struct
+	fedAdminInfo := FedAdminInfo{
+		MemberID:    int(id),
+		MemberName:  newFedAdmin.Name,
+		Email:       email,
+		Description: description,
+		Enabled:     newFedAdmin.Enabled,
+		FedsOwned:   []FederationID{}, // Initially empty
+	}
 
-	FedAdminInfo.MemberID = strconv.FormatInt(id, 10)
-
-	json.NewEncoder(w).Encode(newFedAdmin)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(fedAdminInfo)
 }
 
 func listFedAdmins(w http.ResponseWriter, r *http.Request) {
@@ -145,12 +162,26 @@ func listFedAdmins(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var fedAdmin FedAdminInfo
-		err := rows.Scan(&fedAdmin.MemberID, &fedAdmin.MemberName, &fedAdmin.Email, &fedAdmin.Description, &fedAdmin.Enabled, &fedAdmin.FedsOwned)
+		var fedsOwnedJSON string
+		err := rows.Scan(&fedAdmin.MemberID, &fedAdmin.MemberName, &fedAdmin.Email, &fedAdmin.Description, &fedAdmin.Enabled, &fedsOwnedJSON)
 		if err != nil {
 			http.Error(w, "Failed to scan Federation Admins", http.StatusInternalServerError)
 			return
 		}
+
+		// Unmarshal the JSON array of FederationIDs
+		err = json.Unmarshal([]byte(fedsOwnedJSON), &fedAdmin.FedsOwned)
+		if err != nil {
+			http.Error(w, "Failed to unmarshal feds_owned", http.StatusInternalServerError)
+			return
+		}
+
 		fedAdmins = append(fedAdmins, fedAdmin)
+	}
+
+	if err = rows.Err(); err != nil {
+		http.Error(w, "Failed to iterate over rows", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
