@@ -33,7 +33,11 @@ FedAdmins can create and manage federations. This collection of calls enables th
 - Creates a new federation
 - Method: POST
 - Request Body: A JSON object with the following properties:
+
+```yaml
     name: The name of the new federation
+```
+
 - Response: A JSON object representing the created federation, including its ID and name
 
 #### 3. GET /federations/{fed_id}
@@ -58,7 +62,32 @@ The Federation object has the following properties:
 - name: Name of the federation
 - service_catalogue: An array of Service objects
 
-#### Notes
+### IEEE-2302-2021 :: FHS Operator API
+
+#### 1. POST /FHSOperator/NewFedAdmin
+
+- Creates a new Fed Admin
+- Method: POST
+- Request: a JSON object with the following properties:
+
+```yaml
+    name: The name of the new Fed Admin (required)
+    email: The email address of the new Fed Admin (optional)
+    description: A brief description of the new Fed Admin (optional)
+    enabled: Whether the new Fed Admin is enabled or not (required)
+```
+
+- Response: a JSON object representing the created Fed Admin, including:
+
+```yaml
+    member_id: The unique ID assigned to the new Fed Admin
+    member_name: The name of the new Fed Admin
+    email: The email address of the new Fed Admin (if provided)
+    description: A brief description of the new Fed Admin (if provided)
+    enabled: Whether the new Fed Admin is enabled or not
+```
+
+### Notes
 
 - All endpoints use JSON as the response format.
 - Error responses will be sent with HTTP status codes indicating the error type (e.g., 400 Bad Request, 404 Not Found, etc.).

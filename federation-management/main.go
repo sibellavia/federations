@@ -77,8 +77,8 @@ func main() {
 	router.HandleFunc("/federations/{fed_id}", handleFederationByID).Methods(http.MethodGet, http.MethodDelete)
 
 	// Service running
-	log.Println("Federation Manager Service running on port 8081")
-	log.Fatal(http.ListenAndServe(":8081", router)) // Pass the router to ListenAndServe
+	log.Println("Federation Management Service running on port 8081")
+	log.Fatal(http.ListenAndServe(":8081", router))
 }
 
 // handleFederations handles requests to /federations/
