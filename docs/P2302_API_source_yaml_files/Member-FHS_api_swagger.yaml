@@ -1,0 +1,1736 @@
+openapi: "3.0.3"
+info:
+  description: "This is the FHS Member API for the IEEE 2302-2021 Standard for Intercloud Interoperability and Federation (https://standards.ieee.org/ieee/2302/7056).  This standard is based on the NIST Cloud Federation Reference Architecture (CFRA), SP 500-332, (https://doi.org/10.6028/NIST.SP.500-332)."
+  version: "0.1"
+  title: "Member-FHS API"
+  termsOfService: "http://swagger.io/terms/"
+  contact:
+    email: "lee@keyvoms.org"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+
+servers:
+  - url: https://tbd_fed_server.org/P2302/v1
+    description: "Start with one server then expand to two."
+
+tags:
+- name: "Log In/Out"
+  description: "Log in or out for a specific federation."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Federation"
+  description: "Calls to create and manage federation instances."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Federation FHS-FHS"
+  description: "Calls to join a federation at a different Fed Service."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Federation Monitoring"
+  description: "Calls to manage an external monitoring system."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Attributes"
+  description: "Calls to manage federation roles and attributes."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Membership"
+  description: "Calls to manage federation membership."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Authorization"
+  description: "Calls to grant/revoke authorization attributes."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Services"
+  description: "Calls to manage federation services."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Discovery"
+  description: "Query catalog for available services in a federation."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Invocation"
+  description: "Calls to invoke services available in a federation. Any HTTP verb might be possible."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+
+components:
+  securitySchemes:
+    fhs_auth:
+        type: openIdConnect
+        openIdConnectUrl: https://example.com/.well-known/openid-configuration
+
+  schemas:
+    MemberLoginInfo:
+      type: "object"
+      properties:
+        fed_name:
+          type: "string"
+        member_id:
+          type: "string"
+          format: "uuid"
+      required:
+        - fed_name
+        - member_id
+      xml:
+        name: "MemberLogInfo"
+    SessionID:
+      type: "object"
+      properties:
+        login_session_id:
+          type: "string"
+          format: "uuid"
+      required:
+        - login_session_id
+      xml:
+        name: "SessionID"
+    NewFederationParams:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+        description:
+          type: "string"
+        enabled:
+          type: boolean
+          default: false
+      required:
+        - name
+        - enabled
+      xml:
+        name: "NewFedParams"
+    NewFederation:
+      type: "object"
+      properties:
+        fed_name:
+          type: "string"
+        fed_id:
+          type: "string"
+          format: "uuid"
+        enabled:
+          type: boolean
+      required:
+        - fed_name
+        - fed_id
+        - enabled
+      xml:
+        name: "NewFed"
+    MemberID:
+      type: "object"
+      properties:
+        member_id:
+          type: "string"
+          format: "uuid"
+      required:
+        - member_id
+      xml:
+        name: "MemberID"
+    FederationID:
+      type: "object"
+      properties:
+        fed_id:
+          type: "string"
+          format: "uuid"
+        fed_name:
+          type: "string"
+        fed_description:
+          type: "string"
+      required:
+        - fed_id
+        - fed_name
+      xml:
+        name: "FederationID"
+    FederationInfo:
+      type: "object"
+      properties:
+        fed_id:
+          type: "string"
+          format: "uuid"
+        fed_name:
+          type: "string"
+        n_members:
+          type: "integer"
+          format: "int32"
+        n_services:
+          type: "integer"
+          format: "int32"
+      required:
+        - fed_id
+        - fed_name
+      xml:
+        name: "FederationInfo"
+    NewAttributeName:
+      type: "object"
+      properties:
+        attr_name:
+          type: "string"
+      required:
+        - attr_name
+      xml:
+        name: "NewAttributeName"
+    Attribute:
+      type: "object"
+      properties:
+        attr_id:
+          type: "string"
+          format: "uuid"
+        attr_name:
+          type: "string"
+      required:
+        - attr_id
+        - attr_name
+      xml:
+        name: "NewFed"
+    NewFedMember:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+        email:
+          type: "string"
+          format: "email"
+        description:
+          type: "string"
+        enabled:
+          type: boolean
+          default: false
+      required:
+        - name
+        - enabled
+      xml:
+        name: "NewFedMember"
+    FedMember:
+      type: "object"
+      properties:
+        member_id:
+          type: "string"
+          format: "uuid"
+        member_name:
+          type: "string"
+      required:
+        - member_id
+        - member_name
+      xml:
+        name: "FedMember"
+    FedMemberInfo:
+      type: "object"
+      properties:
+        member_id:
+          type: "string"
+          format: "uuid"
+        member_name:
+          type: "string"
+        email:
+          type: "string"
+          format: "email"
+        description:
+          type: "string"
+        enabled:
+          type: boolean
+      required:
+        - member_id
+        - member_name
+        - enabled
+      xml:
+        name: "FedMemberInfo"
+
+    MonitoringParams:
+      type: "object"
+      properties:
+        monitoring_level:
+          type: "string"
+          enum: [fatal,error,warning,info,debug,trace]
+        monitoring_system_URL:
+          type: "string"
+          format: "url"
+        send_monitoring_data_to_FHS:
+          type: "string"
+          format: "url"
+        enabled:
+          type: boolean
+      required:
+        - monitoring_level
+        - enabled
+      xml:
+        name: "MonitoringParams"
+        
+    NewServiceParams:
+      type: "object"
+      properties:
+        svc_owner_id:
+          type: "string"
+          format: "uuid"
+        svc_endpoint:
+          type: "string"
+          format: "url"
+        svc_metadata:
+          type: "object"
+          additionalProperties: {}
+        svc_discovery_policy:
+          type: "string"
+        svc_access_policy:
+          type: "string"
+      required:
+        - svc_owner_id
+        - svc_endpoint
+      xml:
+        name: "NewServiceParams"
+    ServiceID:
+      type: "object"
+      properties:
+        svc_id:
+          type: "string"
+          format: "uuid"
+      required:
+        - svc_id
+      xml:
+        name: "ServiceID"
+    ServiceInfo:
+      type: "object"
+      properties:
+        svc_id:
+          type: "string"
+          format: "uuid"
+        svc_endpoint:
+          type: "string"
+          format: "url"
+        svc_metadata:
+          type: "object"
+          additionalProperties: {}
+        svc_discovery_policy:
+          type: "string"
+        svc_access_policy:
+          type: "string"
+      required:
+        - svc_id
+        - svc_endpoint
+      xml:
+        name: "ServiceInfo"
+    ServiceDiscInfo:
+      type: "object"
+      properties:
+        svc_id:
+          type: "string"
+          format: "uuid"
+        svc_metadata:
+          type: "object"
+          additionalProperties: {}
+        svc_endpoint:
+          type: "string"
+          format: "url"
+      required:
+        - svc_id
+        - svc_endpoint
+      xml:
+        name: "ServiceDiscInfo"
+    ServiceUpdate:
+      type: "object"
+      properties:
+        svc_metadata:
+          type: "object"
+          additionalProperties: {}
+        svc_discovery_policy:
+          type: "string"
+        svc_access_policy:
+          type: "string"
+      xml:
+        name: "ServiceUpdate"
+    FedJoinRequest:
+      type: "object"
+      properties:
+        request_id:
+          type: "string"
+          format: "uuid"
+        fed_id:
+          type: "string"
+          format: "uuid"
+        fed_name:
+          type: "string"
+        requestor_name:
+          type: "string"
+        requestor_FHS:
+          type: "string"
+          format: "url"
+      required:
+        - request_id
+        - fed_id
+        - requestor_name
+        - requestor_FHS
+      xml:
+        name: "FedJoinRequest"
+
+paths:
+  /MemberLogin:
+    post:
+      tags:
+      - "Log In/Out"
+      summary: "Log into a specific federation instance."
+      description: ""
+      operationId: "fedLogin"
+      requestBody:
+        description: "Federation name."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberLoginInfo"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/MemberLoginInfo"
+      responses:
+        "201":
+            description: "Log in successful."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/SessionID"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  User is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+
+  /MemberLogout/{login_session_id}:
+    delete:
+      tags:
+      - "Log In/Out"
+      summary: "Log out from a specific federation instance"
+      description: ""
+      operationId: "fedLogout"
+      parameters:
+      - in: "path"
+        name: "login_session_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "Login session UUID"
+      responses:
+        "201":
+            description: "Logout successful."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  User is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+
+  /Federation:
+    post:
+      tags:
+      - "Federation"
+      summary: "Create a federation instance"
+      description: ""
+      operationId: "createFedInstance"
+      requestBody:
+        description: "New federation information"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewFederationParams"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/NewFederationParams"
+      responses:
+        "201":
+            description: "Federation created."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/NewFederation"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  User is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+    get:
+      tags:
+      - "Federation"
+      summary: "List federations owned by the caller"
+      description: ""
+      operationId: "listFederations"
+      requestBody:
+        description: "Calling FedAdmin MemberID."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberID"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/MemberID"
+      responses:
+        "200":
+            description: "List of Federations."
+            content:
+              application/json:
+                schema:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/FederationID"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Federation/{fed_id}:
+    get:
+      tags:
+      - "Federation"
+      summary: "Get federation information"
+      description: ""
+      operationId: "FederationInfo"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      requestBody:
+        description: "Calling FedAdmin MemberID."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberID"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/MemberID"
+      responses:
+        "200":
+            description: "Federation Information.  Many items could be added."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/FederationInfo"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+    delete:
+      tags:
+      - "Federation"
+      summary: "Delete a federation"
+      description: ""
+      operationId: "DeleteFederation"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      requestBody:
+        description: "Calling FedAdmin MemberID."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberID"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/MemberID"
+      responses:
+        "200":
+            description: "Federation deleted."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Federation/Query:
+    get:
+      tags:
+      - "Federation FHS-FHS"
+      summary: "Get a list of federations known to this FHS at other connected FHSs"
+      description: ""
+      operationId: "listOtherFedInstances"
+      responses:
+        "200":
+            description: "Other known federations."
+            content:
+              application/json:
+                schema:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/FederationID"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Federation/Join/{fed_id}:
+    post:
+      tags:
+      - "Federation FHS-FHS"
+      summary: "Request to join a federation known to this FHS but at another connected FHSs"
+      description: ""
+      operationId: "joinOtherFedInstance"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      responses:
+        "200":
+            description: "Join request accepted."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+        "403":
+            description: "Forbidden; Join request declined."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Federation/JoinRequests:
+    get:
+      tags:
+      - "Federation FHS-FHS"
+      summary: "Get a list of federation join requests"
+      description: ""
+      operationId: "fedJoinRequests"
+      responses:
+        "200":
+            description: "Federation join requests."
+            content:
+              application/json:
+                schema:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/FedJoinRequest"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Federation/JoinGrant/{request_id}:
+    post:
+      tags:
+      - "Federation FHS-FHS"
+      summary: "Grant a federation join request"
+      description: ""
+      operationId: "grantJoinRequest"
+      parameters:
+      - in: "path"
+        name: "request_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The request UUID"
+      responses:
+        "200":
+            description: "Federation join request granted."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Federation/JoinDeny/{request_id}:
+    post:
+      tags:
+      - "Federation FHS-FHS"
+      summary: "Deny a federation join request"
+      description: ""
+      operationId: "denyJoinRequest"
+      parameters:
+      - in: "path"
+        name: "request_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The request UUID"
+      responses:
+        "200":
+            description: "Federation join request denied."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Federation/Leave/{fed_id}:
+    delete:
+      tags:
+      - "Federation FHS-FHS"
+      summary: "Leave a federation that originated at another connected FHSs"
+      description: ""
+      operationId: "leaveOtherFedInstance"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      responses:
+        "200":
+            description: "Federation originating at another Fed Service left."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /MonitoringParams/{fed_id}:
+    put:
+      tags:
+      - "Federation Monitoring"
+      summary: "Set the parameters for an external monitoring system for this federation."
+      description: ""
+      operationId: "setMonitoringParams"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      requestBody:
+        description: "Monitoring parameters."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MonitoringParams"
+      responses:
+        "200":
+            description: "Monitoring parameters set."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+    get:
+      tags:
+      - "Federation Monitoring"
+      summary: "Get the current parameters for an external monitoring system for this federation."
+      description: ""
+      operationId: "getMonitoringParams"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        description: "The federation UUID"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+      responses:
+        "200":
+            description: "Current monitoring parameters."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/MonitoringParams"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+  /MonitoringProxy/{fed_id}:
+    put:
+      tags:
+      - "Federation Monitoring"
+      summary: "Proxy a call to the external monitoring service."
+      description: ""
+      operationId: "proxyMonitoringCall"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      requestBody:
+        description: "Body defined by monitoring service in use."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Response format defined by monitoring system in use."
+            content:
+              application/json:
+                schema:
+                  type: "object"
+                  additionalProperties: {}
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        
+  /Attribute/{fed_id}:
+    post:
+      tags:
+      - "Attributes"
+      summary: "Create an attribute in a federation"
+      description: ""
+      operationId: "createAttribute"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      requestBody:
+        description: "New attribute information"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewAttributeName"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/NewAttributeName"
+      responses:
+        "201":
+            description: "Attribute created."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/Attribute"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+    get:
+      tags:
+      - "Attributes"
+      summary: "List the attributes in this federation"
+      description: ""
+      operationId: "listAttributes"
+      parameters:
+      - in: "path"
+        name: "request_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The request UUID"
+      responses:
+        "200":
+            description: "List of Attributes."
+            content:
+              application/json:
+                schema:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/Attribute"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Attribute/{fed_id}/{attr_id}:
+    delete:
+      tags:
+      - "Attributes"
+      summary: "Delete an attribute from a federation."
+      description: ""
+      operationId: "deleteAttribute"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "attr_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The attribute UUID"
+      responses:
+        "200":
+            description: "Attibute deleted."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Membership/{fed_id}:
+    post:
+      tags:
+      - "Membership"
+      summary: "Grant membership to a federation"
+      description: ""
+      operationId: "addMember"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      requestBody:
+        description: "New FedMember information"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewFedMember"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/NewFedMember"
+      responses:
+        "201":
+            description: "Federation membership granted."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/FedMember"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+    get:
+      tags:
+      - "Membership"
+      summary: "List members of a federation"
+      description: ""
+      operationId: "listMembers"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      responses:
+        "200":
+            description: "Federation membership list"
+            content:
+              application/json:
+                schema:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/FedMemberInfo"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Membership/{fed_id}/{member_id}:
+    get:
+      tags:
+      - "Membership"
+      summary: "Get specific member info"
+      description: ""
+      operationId: "getMemberInfo"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "member_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The member UUID"
+      responses:
+        "200":
+            description: "Member Info"
+            content:
+              application/json:
+                schema:
+                    $ref: "#/components/schemas/FedMemberInfo"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+    delete:
+      tags:
+      - "Membership"
+      summary: "Revoke a member's federation membership."
+      description: ""
+      operationId: "deleteMember"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "member_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The member UUID"
+      responses:
+        "200":
+            description: "Membership revoked"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Authorization/{fed_id}/{member_id}/{attr_id}:
+    put:
+      tags:
+      - "Authorization"
+      summary: "Grant an authorization attribute to a federation member."
+      description: ""
+      operationId: "grantAuthz"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "member_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The member UUID"
+      - in: "path"
+        name: "attr_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The attribute UUID"
+      responses:
+        "200":
+            description: "Authorization attribute granted"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+    delete:
+      tags:
+      - "Authorization"
+      summary: "Revoke an authorization attribute from a federation member."
+      description: ""
+      operationId: "revokeAuthz"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "member_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The member UUID"
+      - in: "path"
+        name: "attr_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The attribute UUID"
+      responses:
+        "200":
+            description: "Authorization attribute revoked"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+
+  /Services/{fed_id}:
+    post:
+      tags:
+      - "Services"
+      summary: "Register a service with a federation"
+      description: ""
+      operationId: "registerService"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      requestBody:
+        description: "Service information"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewServiceParams"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/NewServiceParams"
+      responses:
+        "201":
+            description: "Service registered."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/ServiceID"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+
+  /Services/{fed_id}/{svc_owner_id}:
+    get:
+      tags:
+      - "Services"
+      summary: "Get list of the svc_ids for my services in this federation"
+      description: ""
+      operationId: "listServiceIDs"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_owner_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service owner UUID"
+      responses:
+        "200":
+            description: "Service IDs"
+            content:
+              application/json:
+                schema:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/ServiceID"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+
+  /Services/{fed_id}/{svc_owner_id}/{svc_id}:
+    get:
+      tags:
+      - "Services"
+      summary: "Get info for a specific service in this federation"
+      description: ""
+      operationId: "serviceInfo"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_owner_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service owner UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      responses:
+        "200":
+            description: "Service Info"
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/ServiceInfo"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+    put:
+      tags:
+      - "Services"
+      summary: "Update the metadata, discovery policy or access policy for a service in this federation"
+      description: ""
+      operationId: "updateService"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_owner_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service owner UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      requestBody:
+        description: "Service update information"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+      responses:
+        "200":
+            description: "Service updated"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+    delete:
+      tags:
+      - "Services"
+      summary: "Delete a specfic service in this federation"
+      description: ""
+      operationId: "serviceDelete"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_owner_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service owner UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      responses:
+        "200":
+            description: "Service deleted"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+
+  /Discovery/{fed_id}/{member_id}:
+    get:
+      tags:
+      - "Discovery"
+      summary: "Look-up services."
+      description: "Query for services I am authorized to see and use."
+      operationId: "discoverServices"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "member_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The member UUID"
+      requestBody:
+        description: "Query parameter dictionary. This could have many different elements."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Service IDs"
+            content:
+              application/json:
+                schema:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/ServiceDiscInfo"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+
+  /Invocation/{fed_id}/{svc_id}:
+    options:
+      tags:
+      - "Invocation"
+      summary: "Call a service I am authorized to use."
+      description: ""
+      operationId: "invokeService"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      requestBody:
+        description: "Service arguments. This could have many different elements."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Service Response.  This could have many different elements."
+            content:
+              application/json:
+                schema:
+                  type: "object"
+                  additionalProperties: {}
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+    head:
+      tags:
+      - "Invocation"
+      summary: "Call a service I am authorized to use."
+      description: ""
+      operationId: "invokeService"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      requestBody:
+        description: "Service arguments. This could have many different elements."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Service Response.  This could have many different elements."
+            content:
+              application/json:
+                schema:
+                  type: "object"
+                  additionalProperties: {}
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+    get:
+      tags:
+      - "Invocation"
+      summary: "Call a service I am authorized to use."
+      description: ""
+      operationId: "invokeService"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      requestBody:
+        description: "Service arguments. This could have many different elements."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Service Response.  This could have many different elements."
+            content:
+              application/json:
+                schema:
+                  type: "object"
+                  additionalProperties: {}
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+    post:
+      tags:
+      - "Invocation"
+      summary: "Call a service I am authorized to use."
+      description: ""
+      operationId: "invokeService"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      requestBody:
+        description: "Service arguments. This could have many different elements."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Service Response.  This could have many different elements."
+            content:
+              application/json:
+                schema:
+                  type: "object"
+                  additionalProperties: {}
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+    put:
+      tags:
+      - "Invocation"
+      summary: "Call a service I am authorized to use."
+      description: ""
+      operationId: "invokeService"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      requestBody:
+        description: "Service arguments. This could have many different elements."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Service Response.  This could have many different elements."
+            content:
+              application/json:
+                schema:
+                  type: "object"
+                  additionalProperties: {}
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+    patch:
+      tags:
+      - "Invocation"
+      summary: "Call a service I am authorized to use."
+      description: ""
+      operationId: "invokeService"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      requestBody:
+        description: "Service arguments. This could have many different elements."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Service Response.  This could have many different elements."
+            content:
+              application/json:
+                schema:
+                  type: "object"
+                  additionalProperties: {}
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+    delete:
+      tags:
+      - "Invocation"
+      summary: "Call a service I am authorized to use."
+      description: ""
+      operationId: "invokeService"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      - in: "path"
+        name: "svc_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The service UUID"
+      requestBody:
+        description: "Service arguments. This could have many different elements."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Service Response.  This could have many different elements."
+            content:
+              application/json:
+                schema:
+                  type: "object"
+                  additionalProperties: {}
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_admin"
+        - "fed_svc_owner"
+        - "fed_member"
+
+externalDocs:
+  description: "Find out more about the NIST CFRA"
+  url: "https://doi.org/10.6028/NIST.SP.500-332"

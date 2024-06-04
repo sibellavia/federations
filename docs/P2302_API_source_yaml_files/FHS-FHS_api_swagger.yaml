@@ -1,0 +1,403 @@
+openapi: "3.0.3"
+info:
+  description: "This is the Fed Hosting Service-to-Fed Hosting Service API for the IEEE 2302-2021 Standard for Intercloud Interoperability and Federation (https://standards.ieee.org/ieee/2302/7056).  This standard is based on the NIST Cloud Federation Reference Architecture (CFRA), SP 500-332, (https://doi.org/10.6028/NIST.SP.500-332)."
+  version: "0.1"
+  title: "FHS-FHS API"
+  termsOfService: "http://swagger.io/terms/"
+  contact:
+    email: "lee@keyvoms.org"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+servers:
+  - url: "https://tbd_fed_server.org/FHSv1"
+    description: "Start with one server then add a second to test the entire API."
+
+components:
+  securitySchemes:
+    fhs_auth:
+      type: openIdConnect   # For example only.  Other authn/z mechanisms could be used.
+      openIdConnectUrl: https://example.com/.well-known/openid-configuration
+
+  schemas:
+    ConnectionParams:
+      type: "object"
+      properties:
+        FHS_API_endpoint:
+          type: "string"
+          format: "url"
+        description:
+          type: "string"
+      required:
+        - FHS_API_endpoint
+      xml:
+        name: "ConnectionParams"
+
+    EstablishedConnectionInfo:
+      type: "object"
+      properties:
+        connection_id:
+          type: "string"
+          format: "uuid"
+        known_federations:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/FederationInfo"
+      required:
+        - connection_id
+        - known_federations
+      xml:
+        name: "EstablishedConnectionInfo"
+
+    FederationInfo:
+      type: "object"
+      properties:
+        fed_id:
+          type: "string"
+          format: "uuid"
+        fed_name:
+          type: "string"
+        fed_description:
+          type: "string"
+      required:
+        - fed_id
+      xml:
+        name: "FederationInfo"
+
+    JoinParams:
+      type: "object"
+      properties:
+        fed_id:
+          type: "string"
+          format: "uuid"
+        member_id:
+          type: "string"
+          format: "uuid"
+        member_name:
+          type: "string"
+        member_email:
+          type: "string"
+          format: "email"
+        member_description:
+          type: "string"
+      required:
+        - fed_id
+        - member_id
+      xml:
+        name: "JoinParams"
+
+    JoinedFedInfo:
+      type: "object"
+      properties:
+        svc_cat:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Registered_Service"
+        attr_set:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Fed_Attribute"
+      required:
+        - svc_cat
+        - attr_set
+      xml:
+        name: "JoinedFedInfo"
+
+    UpdatedFedInfo:
+      type: "object"
+      properties:
+        fed_id:
+          type: "string"
+          format: "uuid"
+        svc_cat:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Registered_Service"
+        attr_set:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Fed_Attribute"
+      required:
+        - fed_id
+      xml:
+        name: "JoinedFedInfo"
+
+    Registered_Service:
+      type: "object"
+      properties:
+        svc_id:
+          type: "string"
+          format: "uuid"
+        svc_metadata:
+          type: "object"
+          additionalProperties: {}
+        svc_endpoint:
+          type: "string"
+          format: "url"
+        svc_discovery_polcy:
+          type: "string"
+      required:
+        - svc_id
+        - svc_endpoint
+      xml:
+        name: "ServiceCatalog"
+
+    Fed_Attribute:
+      type: "object"
+      properties:
+        attr_id:
+          type: "string"
+          format: "uuid"
+        attr_name:
+          type: "string"
+      required:
+        - attr_id
+        - attr_name
+      xml:
+        name: "FedAttribute"
+
+    MemberInfo:
+      type: "object"
+      properties:
+        member_id:
+          type: "string"
+          format: "uuid"
+      required:
+        - member_id
+      xml:
+        name: "MemberInfo"
+
+security:
+  - fhs_auth:
+      - fed_service
+
+tags:
+- name: "Connection"
+  description: "Calls to connect and disconnect Federation Service."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Federation"
+  description: "Calls to join, manage, and leave a specific Federation Instance."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+- name: "Federation Monitoring"
+  description: "Forwarding monitoring data for a specific federation."
+  externalDocs:
+    description: "More info:"
+    url: "https://doi.org/10.6028/NIST.SP.500-332"
+
+paths:
+  /Connect:
+    post:
+      tags:
+      - "Connection"
+      summary: "Connect to another Fed Service."
+      description: ""
+      operationId: "connectFedService"
+      requestBody:
+        description: "Connection information"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectionParams"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/ConnectionParams"
+      responses:
+        "201":
+            description: "Connection established.  Array of known federations returned."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/EstablishedConnectionInfo"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  User is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_service"
+
+  /Connect/{connection_id}:
+    delete:
+      tags:
+      - "Connection"
+      summary: "Disconnect from another Fed Service."
+      description: ""
+      operationId: "disconnectFedService"
+      parameters:
+      - in: "path"
+        name: "connection_id"
+        required: true
+        schema:
+          type: "string"
+          format: "uuid"
+        description: "Connection UUID"
+      responses:
+        "200":
+            description: "Connection terminated."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  User is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_service"
+
+  /JoinFederation:
+    post:
+      tags:
+      - "Federation"
+      summary: "Join a Federation."
+      description: "Join a federation at a different FHS.  Sent at the request of a FedAdmin."
+      operationId: "joinFed"
+      requestBody:
+        description: "Join information"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinParams"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/JoinParams"
+      responses:
+        "201":
+            description: "Joined Federation Info: Service Catalog and Attribute Set."
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/JoinedFedInfo"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  User is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_service"
+  
+  /UpdateFederation:
+    put:
+      tags:
+      - "Federation"
+      summary: "Update a Federation."
+      description: "Propagate federation information whenever it changes."
+      operationId: "updateFed"
+      requestBody:
+        description: "Service Catalog and Attribute Set to be updated for a specific federation"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatedFedInfo"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/UpdatedFedInfo"
+      responses:
+        "200":
+            description: "Federation updated."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  User is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_service"
+
+  /ValidateMember:
+    get:
+      tags:
+      - "Federation"
+      summary: "Validate a Member from another Fed Service."
+      description: "The exact arguments depend on the IdP in use."
+      operationId: "validateMember"
+      requestBody:
+        description: "Info necessary to identify the member being validated. This will be more than the member ID depending on IdP in use."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberInfo"
+          application/xml:
+            schema:
+              $ref: "#/components/schemas/MemberInfo"
+      responses:
+        "200":
+            description: "Member validated. Allow request. Format depends on IdP in use."
+            content:
+              application/json:
+                schema:
+                  type: "object"
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Member not validated. Deny request."
+      security:
+      - fhs_auth:
+        - "fed_service"
+  /LeaveFederation/{fed_id}:
+    delete:
+      tags:
+      - "Federation"
+      summary: "Leave a Federation."
+      description: "(Longer winded explanation can go here.)"
+      operationId: "leaveFed"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: "uuid"
+        description: "Federation UUID"
+      responses:
+        "200":
+            description: "Federation left."
+        "400":
+            description: "Bad Request;  Leave failed.  Some request info may be malformed or invalid."
+        "401":
+            description: "Unauthorized;  User is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_service"
+
+  /MonitoringData/{fed_id}:
+    post:
+      tags:
+      - "Federation Monitoring"
+      summary: "Forward monitoring data for a specific federation."
+      description: ""
+      operationId: "forwardMonitoredData"
+      parameters:
+      - in: "path"
+        name: "fed_id"
+        required: true
+        schema:
+          type: "string"
+          format: uuid
+        description: "The federation UUID"
+      requestBody:
+        description: "Body defined by monitoring service in use."
+        required: false
+        content:
+          application/json:
+            schema:
+              type: "object"
+              additionalProperties: {}
+      responses:
+        "200":
+            description: "Monitoring data posted."
+        "400":
+            description: "Bad Request;  Some request info was malformed or invalid."
+        "401":
+            description: "Unauthorized;  Member is unauthorized to perform this operation."
+      security:
+      - fhs_auth:
+        - "fed_service"
+
+externalDocs:
+  description: "Find out more about the NIST CFRA"
+  url: "https://doi.org/10.6028/NIST.SP.500-332"
