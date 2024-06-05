@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
@@ -82,7 +83,7 @@ func main() {
 	// 1. FHSOperator Core
 	router.HandleFunc("/FHSOperator/NewFedAdmin", handleNewFedAdmin).Methods(http.MethodPost)
 	router.HandleFunc("/FHSOperator/FedAdmins", listFedAdmins).Methods(http.MethodGet)
-
+	router.HandleFunc("/FHSOperator/FedAdmin/{member_id}", handleFedAdmins).Methods(http.MethodPut, http.MethodDelete)
 	// Service running
 	log.Println("Federation Member Management Service running on port 8083")
 	log.Fatal(http.ListenAndServe(":8083", router))
@@ -188,4 +189,46 @@ func listFedAdmins(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(fedAdmins)
 
 	rows.Close()
+}
+
+func handleFedAdmins(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		vars := mux.Vars(r)
+		memberID, err := strconv.Atoi(vars["member_id"])
+		if err != nil {
+			http.Error(w, "Invalid member ID", http.StatusBadRequest)
+			return
+		}
+
+		var fedAdmin NewFedAdmin
+		if err := json.NewDecoder(r.Body).Decode(&fedAdmin); err != nil {
+			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			return
+		}
+
+		db, err := sql.Open("sqlite3", "../federation-management/federations.db")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer db.Close()
+
+		stmt, err := db.Prepare(`UPDATE fed_admins SET member_name = ?, email = ?, description = ?, enabled = ? WHERE member_id = ?`)
+		if err != nil {
+			http.Error(w, "Failed to prepare statement", http.StatusInternalServerError)
+			return
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(fedAdmin.Name, fedAdmin.Email, fedAdmin.Description, fedAdmin.Enabled, memberID)
+		if err != nil {
+			http.Error(w, "Failed to execute update", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(fedAdmin)
+
+	}
 }
