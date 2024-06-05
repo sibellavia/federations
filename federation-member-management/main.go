@@ -18,6 +18,10 @@ type NewFedAdmin struct {
 	Enabled     bool    `json:"enabled"`
 }
 
+type FederationID struct {
+	FedID string `json:"fed_id"`
+}
+
 type FedAdminInfo struct {
 	MemberID    int            `json:"member_id" yaml:"member_id"`
 	MemberName  string         `json:"member_name" yaml:"member_name"`
@@ -25,10 +29,6 @@ type FedAdminInfo struct {
 	Description string         `json:"description" yaml:"description"`
 	Enabled     bool           `json:"enabled" yaml:"enabled"`
 	FedsOwned   []FederationID `json:"feds_owned" yaml:"feds_owned"`
-}
-
-type FederationID struct {
-	FedID string `json:"fed_id"`
 }
 
 var db *sql.DB
@@ -98,11 +98,11 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate mandatory fields
-	if newFedAdmin.Name == "" || !newFedAdmin.Enabled {
-		http.Error(w, "Mandatory fields 'name' and 'enabled' are required", http.StatusBadRequest)
-		return
-	}
+	// // Validate mandatory fields
+	// if newFedAdmin.Name == "" || !newFedAdmin.Enabled {
+	// 	http.Error(w, "Mandatory fields 'name' and 'enabled' are required", http.StatusBadRequest)
+	// 	return
+	// }
 
 	// Open the database connection
 	db, err := sql.Open("sqlite3", "../federation-management/federations.db")
