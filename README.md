@@ -12,7 +12,14 @@ go run main.go
 - Federation Manager runs on port 8081.
 
 ```bash
-cd federation/manager
+cd federation-management
+go run main.go
+```
+
+- Federation Member Management runs on port 8083.
+
+```bash
+cd federation-member-management
 go run main.go
 ```
 
