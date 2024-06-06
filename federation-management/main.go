@@ -114,6 +114,7 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 
 	// Queries the database for all federations and returns them as a JSON response.
 	case http.MethodGet:
+
 		rows, err := db.Query("SELECT id, name FROM federations")
 		if err != nil {
 			http.Error(w, "Failed to retrieve federations", http.StatusInternalServerError)

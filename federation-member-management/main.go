@@ -1,3 +1,10 @@
+/*
+
+Ok so this is Federation Member Management module.
+It can create new FedAdmins and manage them :-)
+
+*/
+
 package main
 
 import (
@@ -11,18 +18,29 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// NewFedAdmin struct for NewFedAdmin
+/*
+NewFedAdmin struct for NewFedAdmin.
+This is used to add a new Federation Administrator in the DB.
+*/
 type NewFedAdmin struct {
-	Name        string  `json:"name"`
-	Email       *string `json:"email,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Enabled     bool    `json:"enabled"`
+	Name        string `json:"name"`
+	Email       string `json:"email"`
+	Description string `json:"description"`
+	Enabled     *bool  `json:"enabled"`
 }
 
+/*
+FederationID struct for Federation IDs.
+This is used to add a new Federation Administrator in the DB.
+*/
 type FederationID struct {
 	FedID string `json:"fed_id"`
 }
 
+/*
+FedAdminInfo struct for Federation Administrators.
+This is used to retrieve Federation Administrators from the DB.
+*/
 type FedAdminInfo struct {
 	MemberID    int            `json:"member_id" yaml:"member_id"`
 	MemberName  string         `json:"member_name" yaml:"member_name"`
@@ -43,6 +61,24 @@ func main() {
 	}
 	defer db.Close()
 
+	createTables()
+
+	// Create a mux router for handling HTTP requests
+	router := mux.NewRouter()
+
+	// IEEE-2302-2021 :: FHS-Operator API
+
+	// 1. FHSOperator Core
+	router.HandleFunc("/FHSOperator/NewFedAdmin", handleNewFedAdmin).Methods(http.MethodPost)
+	router.HandleFunc("/FHSOperator/FedAdmins", listFedAdmins).Methods(http.MethodGet)
+	router.HandleFunc("/FHSOperator/FedAdmin/{member_id}", handleFedAdmins).Methods(http.MethodPut, http.MethodDelete)
+
+	// Service running
+	log.Println("Federation Member Management Service running on port 8083")
+	log.Fatal(http.ListenAndServe(":8083", router))
+}
+
+func createTables() {
 	// Create tables if not exists
 	createFedAdminsTable := `
 	CREATE TABLE IF NOT EXISTS fed_admins (
@@ -55,7 +91,7 @@ func main() {
 	);
 	`
 
-	_, err = db.Exec(createFedAdminsTable)
+	_, err := db.Exec(createFedAdminsTable)
 	if err != nil {
 		log.Fatalf("%q: %s\n", err, createFedAdminsTable)
 		return
@@ -74,19 +110,6 @@ func main() {
 		log.Fatalf("%q: %s\n", err, createFedsOwnedTable)
 		return
 	}
-
-	// Create a mux router for handling HTTP requests
-	router := mux.NewRouter()
-
-	// IEEE-2302-2021 :: FHS-Operator API
-
-	// 1. FHSOperator Core
-	router.HandleFunc("/FHSOperator/NewFedAdmin", handleNewFedAdmin).Methods(http.MethodPost)
-	router.HandleFunc("/FHSOperator/FedAdmins", listFedAdmins).Methods(http.MethodGet)
-	router.HandleFunc("/FHSOperator/FedAdmin/{member_id}", handleFedAdmins).Methods(http.MethodPut, http.MethodDelete)
-	// Service running
-	log.Println("Federation Member Management Service running on port 8083")
-	log.Fatal(http.ListenAndServe(":8083", router))
 }
 
 func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
@@ -99,32 +122,19 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// // Validate mandatory fields
-	// if newFedAdmin.Name == "" || !newFedAdmin.Enabled {
-	// 	http.Error(w, "Mandatory fields 'name' and 'enabled' are required", http.StatusBadRequest)
-	// 	return
-	// }
-
-	// Open the database connection
-	db, err := sql.Open("sqlite3", "../federation-management/federations.db")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if newFedAdmin.Name == "" {
+		http.Error(w, "Mandatory field 'name' is required", http.StatusBadRequest)
 		return
 	}
-	defer db.Close()
 
-	// Handle optional fields
-	email := ""
-	description := ""
-	if newFedAdmin.Email != nil {
-		email = *newFedAdmin.Email
-	}
-	if newFedAdmin.Description != nil {
-		description = *newFedAdmin.Description
+	if newFedAdmin.Enabled == nil {
+		http.Error(w, "Mandatory field 'enabled' is required", http.StatusBadRequest)
+		return
 	}
 
 	// Insert the new fedAdmin into the db
-	result, err := db.Exec("INSERT INTO fed_admins (member_name, email, description, enabled, feds_owned) VALUES (?, ?, ?, ?, ?)", newFedAdmin.Name, email, description, newFedAdmin.Enabled, "[]")
+	result, err := db.Exec("INSERT INTO fed_admins (member_name, email, description, enabled, feds_owned) VALUES (?, ?, ?, ?, ?)",
+		newFedAdmin.Name, newFedAdmin.Email, newFedAdmin.Description, *newFedAdmin.Enabled, "[]")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -141,9 +151,9 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 	fedAdminInfo := FedAdminInfo{
 		MemberID:    int(id),
 		MemberName:  newFedAdmin.Name,
-		Email:       email,
-		Description: description,
-		Enabled:     newFedAdmin.Enabled,
+		Email:       newFedAdmin.Email,
+		Description: newFedAdmin.Description,
+		Enabled:     *newFedAdmin.Enabled,
 		FedsOwned:   []FederationID{}, // Initially empty
 	}
 
@@ -206,13 +216,6 @@ func handleFedAdmins(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
-
-		db, err := sql.Open("sqlite3", "../federation-management/federations.db")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer db.Close()
 
 		stmt, err := db.Prepare(`UPDATE fed_admins SET member_name = ?, email = ?, description = ?, enabled = ? WHERE member_id = ?`)
 		if err != nil {
