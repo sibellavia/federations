@@ -120,7 +120,8 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// executes SQL insert statement
-		result, err := db.Exec("INSERT INTO federations (fed_name, fed_description, enabled, member_id) VALUES (?, ?, ?, ?)", newFederation.FederationName, newFederation.FederationDescription, *newFederation.Enabled, *&newFederation.MemberID)
+		result, err := db.Exec("INSERT INTO federations (fed_name, fed_description, enabled, member_id) VALUES (?, ?, ?, ?)",
+			newFederation.FederationName, newFederation.FederationDescription, *newFederation.Enabled, *newFederation.MemberID)
 		if err != nil {
 			http.Error(w, "Failed to create federation", http.StatusInternalServerError)
 			return

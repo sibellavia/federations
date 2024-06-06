@@ -108,3 +108,12 @@ Each Federation Administrator (fed_admins.member_id) can create multiple Federat
 #### federations to services: One-to-Many relationship.
 
 Each Federation (federations.fed_id) can have multiple Services (services.fed_id).
+
+### Note per me stesso (per ricordarmi)
+
+Per avere un'architettura completamente federata, dove ciascuna istanza dell'OVP sia autonoma, indipendente e self-contained, e comunque in grado di poter comunicare e condividere dati con altre istanze, dovrei implementare un sistema distribuito di brokering.
+
+Quindi l'idea di implementazione è:
+1. Deploy di istanze kafka indipendenti (ogni OVP avrà la sua istanza con il proprio cluster di Kafka -> sicuramente dovrò implementare una replicazione cross-cluster di Kafka per sincronizzare gli eventi delle federazioni fra gli OVP?)
+2. Implementazione pub/sub (ogni OVP pubblicherà eventi relativi alle federazioni sul proprio cluster di Kafka, e ogni OVP consumerà eventi per aggiornare il proprio local state)
+3. Implementazione cross-cluster replication (kafka mirrormaker per replicare eventi fra i vari cluster di kafka? eventi che andrebbero replicati sono tipo federation creation, updates, joins...)
