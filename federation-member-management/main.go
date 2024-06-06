@@ -86,8 +86,7 @@ func createTables() {
         member_name TEXT NOT NULL,
 		email TEXT,
 		description TEXT,
-		enabled BOOLEAN NOT NULL,
-		feds_owned TEXT
+		enabled BOOLEAN NOT NULL
 	);
 	`
 
@@ -133,8 +132,8 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Insert the new fedAdmin into the db
-	result, err := db.Exec("INSERT INTO fed_admins (member_name, email, description, enabled, feds_owned) VALUES (?, ?, ?, ?, ?)",
-		newFedAdmin.Name, newFedAdmin.Email, newFedAdmin.Description, *newFedAdmin.Enabled, "[]")
+	result, err := db.Exec("INSERT INTO fed_admins (member_name, email, description, enabled) VALUES (?, ?, ?, ?)",
+		newFedAdmin.Name, newFedAdmin.Email, newFedAdmin.Description, *newFedAdmin.Enabled)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -162,7 +161,7 @@ func handleNewFedAdmin(w http.ResponseWriter, r *http.Request) {
 }
 
 func listFedAdmins(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT member_id, member_name, email, description, enabled, feds_owned FROM fed_admins")
+	rows, err := db.Query("SELECT member_id, member_name, email, description, enabled FROM fed_admins")
 	if err != nil {
 		http.Error(w, "Failed to retrieve fed admins", http.StatusInternalServerError)
 		return
@@ -173,19 +172,19 @@ func listFedAdmins(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var fedAdmin FedAdminInfo
-		var fedsOwnedJSON string
-		err := rows.Scan(&fedAdmin.MemberID, &fedAdmin.MemberName, &fedAdmin.Email, &fedAdmin.Description, &fedAdmin.Enabled, &fedsOwnedJSON)
+		// var fedsOwnedJSON string
+		err := rows.Scan(&fedAdmin.MemberID, &fedAdmin.MemberName, &fedAdmin.Email, &fedAdmin.Description, &fedAdmin.Enabled)
 		if err != nil {
 			http.Error(w, "Failed to scan Federation Admins", http.StatusInternalServerError)
 			return
 		}
 
-		// Unmarshal the JSON array of FederationIDs
-		err = json.Unmarshal([]byte(fedsOwnedJSON), &fedAdmin.FedsOwned)
-		if err != nil {
-			http.Error(w, "Failed to unmarshal feds_owned", http.StatusInternalServerError)
-			return
-		}
+		// // Unmarshal the JSON array of FederationIDs
+		// err = json.Unmarshal([]byte(fedsOwnedJSON), &fedAdmin.FedsOwned)
+		// if err != nil {
+		// 	http.Error(w, "Failed to unmarshal feds_owned", http.StatusInternalServerError)
+		// 	return
+		// }
 
 		fedAdmins = append(fedAdmins, fedAdmin)
 	}

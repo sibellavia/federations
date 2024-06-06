@@ -98,3 +98,13 @@ The Federation object has the following properties:
 
 - All endpoints use JSON as the response format.
 - Error responses will be sent with HTTP status codes indicating the error type (e.g., 400 Bad Request, 404 Not Found, etc.).
+
+### Relationships
+
+#### fed_admins to federations: One-to-Many relationship.
+
+Each Federation Administrator (fed_admins.member_id) can create multiple Federations (federations.member_id).
+
+#### federations to services: One-to-Many relationship.
+
+Each Federation (federations.fed_id) can have multiple Services (services.fed_id).

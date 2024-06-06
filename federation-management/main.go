@@ -5,25 +5,31 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Represents a Federation with an ID, name and a list of services (Federated Resources Catalogue)
-type Federation struct {
-	ID               int       `json:"id"`
-	Name             string    `json:"name"`
-	ServiceCatalogue []Service `json:"service_catalogue"`
+type NewFederation struct {
+	MemberID              *int   `json:"member_id"`       // Mandatory
+	FederationName        string `json:"fed_name"`        // Mandatory
+	FederationDescription string `json:"fed_description"` // Optional
+	Enabled               *bool  `json:"enabled"`         // Mandatory
 }
 
-// Represents a Service with an ID, federation ID, name and description
+type Federation struct {
+	FederationID          int    `json:"fed_id"`
+	FederationName        string `json:"fed_name"`        // Mandatory
+	FederationDescription string `json:"fed_description"` // Optional
+	MemberID              *int   `json:"member_id"`       // Mandatory
+	Enabled               *bool  `json:"enabled"`         // Mandatory
+}
+
 type Service struct {
-	ID           int    `json:"id"`
-	FederationID int    `json:"federation_id"`
-	Name         string `json:"name"`
-	Description  string `json:"description"`
+	ServiceID          int    `json:"service_id"`
+	FederationID       int    `json:"fed_id"`
+	ServiceName        string `json:"service_name"`
+	ServiceDescription string `json:"service_description"`
 }
 
 // A global variable to hold the database connection
@@ -42,8 +48,12 @@ func main() {
 	// Create tables if not exists
 	createFederationsTable := `
     CREATE TABLE IF NOT EXISTS federations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL
+        fed_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fed_name TEXT NOT NULL,
+		fed_description TEXT,
+		member_id INTEGER,
+		enabled BOOLEAN NOT NULL,
+		FOREIGN KEY (member_id) REFERENCES fed_admins(member_id)
     );
     `
 	_, err = db.Exec(createFederationsTable)
@@ -54,11 +64,11 @@ func main() {
 
 	createServicesTable := `
     CREATE TABLE IF NOT EXISTS services (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        federation_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        FOREIGN KEY(federation_id) REFERENCES federations(id)
+        service_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fed_id INTEGER,
+        service_name TEXT NOT NULL,
+        service_description TEXT,
+        FOREIGN KEY (fed_id) REFERENCES federations(fed_id)
     );
     `
 	_, err = db.Exec(createServicesTable)
@@ -74,7 +84,6 @@ func main() {
 
 	// 4. Federation
 	router.HandleFunc("/federations", handleFederations).Methods(http.MethodPost, http.MethodGet)
-	router.HandleFunc("/federations/{fed_id}", handleFederationByID).Methods(http.MethodGet, http.MethodDelete)
 
 	// Service running
 	log.Println("Federation Management Service running on port 8081")
@@ -88,15 +97,30 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 
 	// Decodes the request body to a Federation struct, inserts it into the database, and returns the created federation.
 	case http.MethodPost:
-		var federation Federation
-		err := json.NewDecoder(r.Body).Decode(&federation)
+		var newFederation NewFederation
+		err := json.NewDecoder(r.Body).Decode(&newFederation)
 		if err != nil {
 			http.Error(w, "Invalid request payload", http.StatusBadRequest)
 			return
 		}
 
+		if newFederation.MemberID == nil {
+			http.Error(w, "Mandatory field 'member_id' is required", http.StatusBadRequest)
+			return
+		}
+
+		if newFederation.FederationName == "" {
+			http.Error(w, "Mandatory field 'fed_name' is required", http.StatusBadRequest)
+			return
+		}
+
+		if newFederation.Enabled == nil {
+			http.Error(w, "Mandatory field 'enabled' is required", http.StatusBadRequest)
+			return
+		}
+
 		// executes SQL insert statement
-		result, err := db.Exec("INSERT INTO federations (name) VALUES (?)", federation.Name)
+		result, err := db.Exec("INSERT INTO federations (fed_name, fed_description, enabled, member_id) VALUES (?, ?, ?, ?)", newFederation.FederationName, newFederation.FederationDescription, *newFederation.Enabled, *&newFederation.MemberID)
 		if err != nil {
 			http.Error(w, "Failed to create federation", http.StatusInternalServerError)
 			return
@@ -108,14 +132,22 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		federation.ID = int(id)
+		// Create the response struct
+		federation := Federation{
+			FederationID:          int(id),
+			FederationName:        newFederation.FederationName,
+			FederationDescription: newFederation.FederationDescription,
+			MemberID:              newFederation.MemberID,
+			Enabled:               newFederation.Enabled,
+		}
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(federation)
 
 	// Queries the database for all federations and returns them as a JSON response.
 	case http.MethodGet:
 
-		rows, err := db.Query("SELECT id, name FROM federations")
+		rows, err := db.Query("SELECT * FROM federations")
 		if err != nil {
 			http.Error(w, "Failed to retrieve federations", http.StatusInternalServerError)
 			return
@@ -125,7 +157,7 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 		var federations []Federation
 		for rows.Next() {
 			var federation Federation
-			err := rows.Scan(&federation.ID, &federation.Name)
+			err := rows.Scan(&federation.FederationID, &federation.FederationName, &federation.FederationDescription, &federation.MemberID, &federation.Enabled)
 			if err != nil {
 				http.Error(w, "Failed to scan federation", http.StatusInternalServerError)
 				return
@@ -135,63 +167,6 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(federations)
-
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-	}
-}
-
-// handleFederationByID handles requests to /federations/{fed_id}
-// handles GET and DELETE requests for a specific federation by ID.
-func handleFederationByID(w http.ResponseWriter, r *http.Request) {
-	// 1. Get the federation ID from the URL parameters
-	vars := mux.Vars(r)
-	fedID, err := strconv.Atoi(vars["fed_id"])
-	if err != nil {
-		http.Error(w, "Invalid federation ID", http.StatusBadRequest)
-		return
-	}
-
-	switch r.Method {
-	case http.MethodGet: // Get a specific federation
-		// 1. Query the database for the federation
-		var federation Federation
-		err = db.QueryRow("SELECT id, name FROM federations WHERE id = ?", fedID).Scan(&federation.ID, &federation.Name)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				http.Error(w, "Federation not found", http.StatusNotFound)
-			} else {
-				http.Error(w, "Failed to get federation", http.StatusInternalServerError)
-			}
-			return
-		}
-
-		// 2. Send the response (federation details)
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(federation)
-
-	case http.MethodDelete: // Delete a federation
-		// 1. Delete the federation from the database
-		result, err := db.Exec("DELETE FROM federations WHERE id = ?", fedID)
-		if err != nil {
-			http.Error(w, "Failed to delete federation", http.StatusInternalServerError)
-			return
-		}
-
-		// 2. Check if any rows were affected (federation existed)
-		rowsAffected, err := result.RowsAffected()
-		if err != nil {
-			http.Error(w, "Failed to check deleted rows", http.StatusInternalServerError)
-			return
-		}
-
-		if rowsAffected == 0 {
-			http.Error(w, "Federation not found", http.StatusNotFound)
-			return
-		}
-
-		// 3. Send a success response
-		w.WriteHeader(http.StatusNoContent) // 204 No Content
 
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
