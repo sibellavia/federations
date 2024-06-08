@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/IBM/sarama"
 	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -85,6 +86,8 @@ func main() {
 	// 4. Federation
 	router.HandleFunc("/federations", handleFederations).Methods(http.MethodPost, http.MethodGet)
 
+	go ConsumeEvents()
+
 	// Service running
 	log.Println("Federation Management Service running on port 8081")
 	log.Fatal(http.ListenAndServe(":8081", router))
@@ -142,6 +145,18 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 			Enabled:               newFederation.Enabled,
 		}
 
+		// Produce event to Kafka
+		event := FederationEvent{
+			Action: "FederationCreated",
+			Data:   federation,
+		}
+		if err := produceEvent(event); err != nil {
+			http.Error(w, "Failed to produce Kafka event", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(federation)
 
@@ -172,4 +187,24 @@ func handleFederations(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+func produceEvent(event FederationEvent) error {
+	producer, err := sarama.NewSyncProducer(localKafkaBrokers, nil)
+	if err != nil {
+		return err
+	}
+	defer producer.Close()
+
+	message, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	msg := &sarama.ProducerMessage{
+		Topic: KafkaTopic,
+		Value: sarama.StringEncoder(message),
+	}
+	_, _, err = producer.SendMessage(msg)
+	return err
 }

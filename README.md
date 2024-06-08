@@ -23,6 +23,23 @@ cd federation-member-management
 go run main.go
 ```
 
+- Kafka
+
+1. Follow the instructions on the [Kafka quickstart guide](https://kafka.apache.org/quickstart) to download and install Kafka on each VM where the PoC is running.
+
+2. Start Kafka Server:
+
+```bash
+bin/zookeeper-server-start.sh config/zookeeper.properties
+bin/kafka-server-start.sh config/server.properties
+```
+
+3. Create a topic for federation events on each Kafka instance:
+
+```bash
+bin/kafka-topics.sh --create --topic federation-events --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1
+```
+
 ### IEEE-2302-2021 :: FHS Member API
 
 As defined in IEEE-2302-2021, FHS Member API Tag 4: Federation. 
