@@ -157,7 +157,7 @@ func sendRegister() {
 func handleRegister(instance Instance) {
 	// First we check if the instance is ourselves
 	if *instance.InstanceID == *currentInstance.InstanceID {
-		log.Printf("Received REGISTER message from self (ID %d). Ignoring.", *instance.InstanceID)
+		// log.Printf("Received REGISTER message from self (ID %d). Ignoring.", *instance.InstanceID)
 		return
 	}
 
@@ -179,7 +179,7 @@ func handleRegister(instance Instance) {
 func sendRegisterResponse(newInstance Instance) {
 	// Check if the new instance is ourselves
 	if *newInstance.InstanceID == *currentInstance.InstanceID {
-		log.Printf("Attempted to send REGISTER_RESPONSE to ourselves, ignoring")
+		// log.Printf("Attempted to send REGISTER_RESPONSE to ourselves, ignoring")
 		return
 	}
 
