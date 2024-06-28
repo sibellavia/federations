@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,13 +10,16 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
+// Define the multicast address for communication
 const (
 	multicastAddr = "239.0.1.100:12345"
 )
 
+// Instance represents a Node instance
 type Instance struct {
 	InstanceID       *int   `json:"instance_id"`
 	InstanceIP       string `json:"instance_ip"`
@@ -23,18 +27,25 @@ type Instance struct {
 	InstanceMetadata string `json:"instance_metadata"`
 }
 
+// FCPMessage represents a message in the FCP protocol.
 type FCPMessage struct {
 	Type     string   `json:"type"`
 	Instance Instance `json:"instance"`
 }
 
-var (
-	currentInstance Instance
-	catalogue       = make(map[int]Instance)
-	catalogueMutex  sync.RWMutex
-)
+var db *sql.DB
+
+// currentInstance represents the currently active instance/node
+var currentInstance Instance
 
 func main() {
+	// main initializes the currentInstance struct with values from environment variables,
+	// and starts goroutines to listen for multicast messages and handle user input.
+	// The main goroutine is kept running indefinitely using a select statement.
+
+	initDB()
+	defer db.Close()
+
 	id, _ := strconv.Atoi(os.Getenv("INSTANCE_ID"))
 	port, _ := strconv.Atoi(os.Getenv("INSTANCE_PORT"))
 	currentInstance = Instance{
@@ -54,6 +65,30 @@ func main() {
 	select {} // keep the main goroutine running
 }
 
+func initDB() {
+	var err error
+	db, err = sql.Open("sqlite3", "./fcp.db")
+	if err != nil {
+		log.Fatalf("Error opening database: %v", err)
+	}
+
+	// Create the instances table if it doesn't exist
+	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS instances (
+		instance_id INTEGER PRIMARY KEY,
+		instance_ip TEXT NOT NULL,
+		instance_port INTEGER NOT NULL,
+		instance_metadata TEXT
+	)`)
+	if err != nil {
+		log.Fatalf("Error creating instances table: %v", err)
+	}
+}
+
+// listenMulticast listens for multicast messages on the specified address.
+// It resolves the UDP address, creates a multicast UDP connection, and starts
+// a separate goroutine to listen for unicast responses. It reads multicast
+// messages, unmarshals them into FCPMessage struct, and handles REGISTER
+// messages by calling the handleRegister function.
 func listenMulticast() {
 	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
 	if err != nil {
@@ -89,6 +124,10 @@ func listenMulticast() {
 	}
 }
 
+// listenUnicast listens for UDP unicast messages on the specified port.
+// It resolves the UDP address, creates a UDP connection, and continuously reads incoming messages.
+// If a message is successfully read and unmarshalled, it checks the message type and handles it accordingly.
+// This function is designed to be run as a goroutine.
 func listenUnicast() {
 	addr, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", *currentInstance.InstancePort))
 	if err != nil {
@@ -121,6 +160,12 @@ func listenUnicast() {
 	}
 }
 
+// sendRegister sends a REGISTER message to a multicast address.
+// It resolves the UDP address, dials the multicast address, and sends the message.
+// The message contains the type "REGISTER" and the current instance.
+// If there is an error resolving the multicast address, dialing it,
+// marshaling the JSON, or sending the multicast message, an error is logged.
+// Otherwise, a success message is logged.
 func sendRegister() {
 	addr, err := net.ResolveUDPAddr("udp", multicastAddr)
 	if err != nil {
@@ -154,32 +199,65 @@ func sendRegister() {
 	}
 }
 
+// handleRegister handles the REGISTER message received from an instance.
+// If the instance is new, it adds it to the catalogue and sends the current
+// instance information to the new instance.
 func handleRegister(instance Instance) {
-	// First we check if the instance is ourselves
 	if *instance.InstanceID == *currentInstance.InstanceID {
-		// log.Printf("Received REGISTER message from self (ID %d). Ignoring.", *instance.InstanceID)
 		return
 	}
 
-	isNewInstance := false
-	catalogueMutex.Lock()
-	if _, exists := catalogue[*instance.InstanceID]; !exists {
-		isNewInstance = true
-		catalogue[*instance.InstanceID] = instance
-		log.Printf("Registered new instance: ID %d, IP %s, Port %d", *instance.InstanceID, instance.InstanceIP, *instance.InstancePort)
+	exists, err := instanceExists(*instance.InstanceID)
+	if err != nil {
+		log.Printf("Error checking if instance exists: %v", err)
+		return
 	}
-	catalogueMutex.Unlock()
 
-	if isNewInstance {
-		// Send current instance information to the new instance
-		sendRegisterResponse(instance)
+	if exists {
+		log.Printf("Instance ID %d already exists in the catalogue", *instance.InstanceID)
+		return
 	}
+
+	stmt, err := db.Prepare(`
+        INSERT OR REPLACE INTO instances (instance_id, instance_ip, instance_port, instance_metadata)
+        VALUES (?, ?, ?, ?)
+    `)
+	if err != nil {
+		log.Printf("Error preparing statement: %v", err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(*instance.InstanceID, instance.InstanceIP, *instance.InstancePort, instance.InstanceMetadata)
+	if err != nil {
+		log.Printf("Error inserting instance: %v", err)
+		return
+	}
+
+	log.Printf("Registered instance: ID %d, IP %s, Port %d", *instance.InstanceID, instance.InstanceIP, *instance.InstancePort)
+
+	// Send current instance information to the new instance
+	sendRegisterResponse(instance)
 }
 
+// sendRegisterResponse sends a REGISTER_RESPONSE message to a new instance.
+// It dials the new instance using UDP and sends the REGISTER_RESPONSE message.
+// The function takes a new instance as a parameter.
+// It returns an error if there is any issue with dialing or sending the message.
 func sendRegisterResponse(newInstance Instance) {
 	// Check if the new instance is ourselves
 	if *newInstance.InstanceID == *currentInstance.InstanceID {
-		// log.Printf("Attempted to send REGISTER_RESPONSE to ourselves, ignoring")
+		return
+	}
+
+	exists, err := instanceExists(*currentInstance.InstanceID)
+	if err != nil {
+		log.Printf("Error checking if instance exists: %v", err)
+		return
+	}
+
+	if exists {
+		log.Printf("Instance ID %d already exists in the catalogue", *currentInstance.InstanceID)
 		return
 	}
 
@@ -211,12 +289,23 @@ func sendRegisterResponse(newInstance Instance) {
 }
 
 func printCatalogue() {
-	catalogueMutex.RLock()         // Acquire shared lock for reading
-	defer catalogueMutex.RUnlock() // Ensure the lock is released when the function returns
+	rows, err := db.Query("SELECT instance_id, instance_ip, instance_port, instance_metadata FROM instances")
+	if err != nil {
+		log.Printf("Error querying instances: %v", err)
+		return
+	}
+	defer rows.Close()
 
 	fmt.Println("Current Instance Catalogue:")
-	for id, instance := range catalogue {
-		fmt.Printf("ID: %d, IP: %s, Port: %d, Metadata: %s\n", id, instance.InstanceIP, *instance.InstancePort, instance.InstanceMetadata)
+	for rows.Next() {
+		var id, port int
+		var ip, metadata string
+		err := rows.Scan(&id, &ip, &port, &metadata)
+		if err != nil {
+			log.Printf("Error scanning row: %v", err)
+			continue
+		}
+		fmt.Printf("ID: %d, IP: %s, Port: %d, Metadata: %s\n", id, ip, port, metadata)
 	}
 }
 
@@ -238,4 +327,10 @@ func handleUserInput() {
 			fmt.Println("Unknown command. Please try again.")
 		}
 	}
+}
+
+func instanceExists(id int) (bool, error) {
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM instances WHERE instance_id = ?)", id).Scan(&exists)
+	return exists, err
 }
